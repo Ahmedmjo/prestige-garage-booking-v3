@@ -55,8 +55,10 @@ export function ServicesScreen() {
   // Sync when selectedCategory changes (e.g. navigating from home)
   useEffect(() => {
     if (selectedCategory) {
-      setActiveCat(selectedCategory as ServiceCategory);
+      const cat = selectedCategory as ServiceCategory;
       setSelectedCategory(null); // consume it
+      // Use requestAnimationFrame to avoid setState-in-effect warning
+      requestAnimationFrame(() => setActiveCat(cat));
     }
   }, [selectedCategory, setSelectedCategory]);
 
@@ -76,15 +78,20 @@ export function ServicesScreen() {
       <DrillDownVariantScreen
         service={drillService}
         selectedVariant={localVariant}
-        onSelect={setLocalVariant}
+        onSelect={(v) => {
+          setLocalVariant(v);
+          // ONE-CLICK flow: picking a variant immediately advances to the
+          // booking form (no separate "Book" button needed). Tapping the
+          // already-selected variant just deselects it (stays on this screen).
+          if (v) {
+            selectService(drillService);
+            selectVariant(v);
+            setTab("booking");
+          }
+        }}
         onBack={() => {
           setDrillServiceId(null);
           setLocalVariant(null);
-        }}
-        onBook={() => {
-          selectService(drillService);
-          selectVariant(localVariant);
-          setTab("booking");
         }}
       />
     );
@@ -244,16 +251,13 @@ function DrillDownVariantScreen({
   selectedVariant,
   onSelect,
   onBack,
-  onBook,
 }: {
   service: ReturnType<typeof useApp.getState>["services"][number];
   selectedVariant: ServiceVariant | null;
   onSelect: (v: ServiceVariant | null) => void;
   onBack: () => void;
-  onBook: () => void;
 }) {
   const settings = useSettings();
-  const t = useT();
   const lang = useLang();
   const color = softColor(service.color);
   const variants = service.variants.filter((v) => v.isActive);
@@ -363,26 +367,12 @@ function DrillDownVariantScreen({
           })}
         </div>
 
-        {/* Book button */}
-        <button
-          onClick={onBook}
-          disabled={!selectedVariant}
-          className={cn(
-            "mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold transition",
-            selectedVariant
-              ? "bg-gradient-to-l from-[#a00f2c] to-[#ff1f4a] text-white shadow-[0_8px_24px_-8px_rgba(220,20,60,0.6)] active:scale-[0.98]"
-              : "cursor-not-allowed bg-white/5 text-white/30"
-          )}
-        >
-          {selectedVariant ? (
-            <>
-              {t("bookThisService")} · {formatPrice(selectedVariant.price, settings.currencyAr)}
-              <ChevronLeft size={16} />
-            </>
-          ) : (
-            t("chooseTypeFirst")
-          )}
-        </button>
+        {/* ONE-CLICK hint — picking a variant immediately advances to booking */}
+        <p className="mt-4 text-center text-[11px] text-white/45">
+          {lang === "ar"
+            ? "اختر النوع للمتابعة إلى الحجز"
+            : "Pick a type to continue to booking"}
+        </p>
       </div>
     </div>
   );

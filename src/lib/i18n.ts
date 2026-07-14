@@ -50,7 +50,7 @@ export const translations = {
   tomorrow: { ar: "غداً", en: "Tomorrow" },
   name: { ar: "الاسم", en: "Name" },
   phone: { ar: "رقم الهاتف", en: "Phone" },
-  carModel: { ar: "موديل السيارة", en: "Car Model" },
+  carModel: { ar: "موديل السيارة (اختياري)", en: "Car Model (optional)" },
   carPlate: { ar: "رقم السيارة (اختياري)", en: "Car Plate (optional)" },
   notes: { ar: "ملاحظات (اختياري)", en: "Notes (optional)" },
   next: { ar: "التالي", en: "Next" },

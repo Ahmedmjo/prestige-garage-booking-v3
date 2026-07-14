@@ -18,6 +18,7 @@ import {
   Tag,
   CarFront,
   Search,
+  MapPin,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { useSettings } from "@/lib/use-settings";
@@ -37,6 +38,7 @@ import {
   type ServiceItem,
   type BookingItem,
   type BookingStatus,
+  type BranchItem,
 } from "@/lib/types";
 import {
   Select,
@@ -130,6 +132,23 @@ export function BookingScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<BookingItem | null>(null);
 
+  // Branch selection (only shown when settings.branchSelectionEnabled !== "false"
+  // AND there is at least one active branch). Hidden otherwise → branchId stays null.
+  const branches = useApp((s) => s.branches);
+  const activeBranches = useMemo(
+    () => branches.filter((b) => b.isActive),
+    [branches],
+  );
+  const branchSelectionEnabled = settings.branchSelectionEnabled !== "false";
+  const showBranchSelector =
+    branchSelectionEnabled && activeBranches.length > 0;
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+  const selectedBranch = useMemo(
+    () =>
+      activeBranches.find((b) => b.id === selectedBranchId) ?? null,
+    [activeBranches, selectedBranchId],
+  );
+
   // live slot availability
   const [slots, setSlots] = useState<
     { time: string; remaining: number; capacity: number; full: boolean }[]
@@ -207,7 +226,7 @@ export function BookingScreen() {
     (step === detailsStepIdx &&
       form.customerName &&
       form.phone &&
-      form.carModel &&
+      // carModel is OPTIONAL — only carType + carBrand are required
       carType &&
       carBrand);
 
@@ -237,6 +256,7 @@ export function BookingScreen() {
           carPlate: form.carPlate,
           carType,
           carBrand,
+          branchId: showBranchSelector ? selectedBranchId : null,
           serviceId: selected.id,
           variantId: selectedVariant?.id ?? null,
           date,
@@ -273,6 +293,7 @@ export function BookingScreen() {
           setTime(null);
           setCarType(null);
           setCarBrand(null);
+          setSelectedBranchId(null);
           setForm({
             customerName: "",
             phone: "",
@@ -412,7 +433,14 @@ export function BookingScreen() {
                   return (
                     <button
                       key={s.id}
-                      onClick={() => selectService(s)}
+                      onClick={() => {
+                        // ONE-CLICK flow: tapping a service immediately advances
+                        // — if it has variants → variant step (step 1)
+                        // — if no variants → date step (step 1 in the no-variant layout)
+                        // No separate "select then Next" step required.
+                        selectService(s);
+                        setStep(1);
+                      }}
                       className={cn(
                         "booking-select-box flex w-full items-center gap-3 p-3 text-right active:scale-[0.99]",
                         active && "selected"
@@ -607,6 +635,47 @@ export function BookingScreen() {
           animate={{ opacity: 1, x: 0 }}
           className="mt-6 space-y-4"
         >
+          {/* Branch selector — only shown when branchSelectionEnabled !== "false"
+              AND there is at least one active branch. */}
+          {showBranchSelector && (
+            <div>
+              <span className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-white/70">
+                <span className="text-[#ff4d6d]">
+                  <MapPin size={15} />
+                </span>
+                {t("ourBranches")}
+              </span>
+              <Select
+                value={selectedBranchId ?? undefined}
+                onValueChange={setSelectedBranchId}
+              >
+                <SelectTrigger
+                  className={cn(
+                    "booking-select-box h-12 w-full px-3.5 text-sm font-bold",
+                    selectedBranchId ? "selected text-white" : "text-white/50"
+                  )}
+                >
+                  <SelectValue
+                    placeholder={
+                      lang === "ar" ? "اختر الفرع..." : "Select branch..."
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent className="max-h-72 overflow-y-auto bg-popover text-white">
+                  {activeBranches.map((b: BranchItem) => (
+                    <SelectItem
+                      key={b.id}
+                      value={b.id}
+                      className="text-sm font-semibold text-white/85 focus:bg-[#DC143C]/12 focus:text-white"
+                    >
+                      {lang === "ar" ? b.nameAr : b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Car type selector — big emoji + label using .car-type-box */}
           <div>
             <span className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-white/70">
@@ -735,6 +804,12 @@ export function BookingScreen() {
                     label={t("stepType")}
                     value={selectedVariant.nameAr}
                     highlight
+                  />
+                )}
+                {showBranchSelector && selectedBranch && (
+                  <Row
+                    label={t("ourBranches")}
+                    value={lang === "ar" ? selectedBranch.nameAr : selectedBranch.name}
                   />
                 )}
                 {carType && (
@@ -1131,10 +1206,20 @@ function BookingConfirmed({
         <div className="space-y-2 rounded-xl bg-white/[0.03] border border-white/8 p-3">
           {[
             { label: t("name"), value: booking.customerName },
-            { label: t("carModel"), value: booking.carModel },
+            // carModel is optional — only show the row if a value was entered
+            booking.carModel ? { label: t("carModel"), value: booking.carModel } : null,
             booking.carBrand ? { label: t("carBrand"), value: booking.carBrand } : null,
             booking.carType ? { label: t("carType"), value: booking.carType } : null,
             booking.carPlate ? { label: "لوحة السيارة", value: booking.carPlate } : null,
+            booking.branch
+              ? {
+                  label: t("ourBranches"),
+                  value:
+                    lang === "ar"
+                      ? booking.branch.nameAr || booking.branch.name
+                      : booking.branch.name,
+                }
+              : null,
           ].filter(Boolean).map((row, idx) => row && (
             <div key={idx} className="flex items-center justify-between">
               <span className="text-[11px] text-white/40">{row.label}</span>

@@ -337,7 +337,7 @@ export function BookingsScreen() {
                   <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                     <Info icon={<CalendarCheck size={13} />} label={t("stepDate")} value={b.date} />
                     <Info icon={<Clock size={13} />} label={t("chooseTime")} value={b.time} />
-                    <Info icon={<Car size={13} />} label={t("carModel")} value={b.carModel} />
+                    <Info icon={<Car size={13} />} label={t("carModel")} value={b.carModel || b.carBrand || "—"} />
                   </div>
 
                   {/* Car type + brand chips */}

@@ -90,18 +90,9 @@ export function BrandLockup({
       <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-white/55 sm:text-xs">
         Premium Car Care
       </p>
-      {/* Ziebart badge */}
-      <div className="mt-2 flex flex-col items-center gap-0.5">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d4af37]">
-          Authorised Ziebart
-        </p>
-        <p className="text-[10px] font-semibold tracking-[0.15em] text-white/50">
-          وكيل خدمة
-        </p>
-      </div>
       {showTagline && (
         <p className="mt-2 text-xs italic text-white/45">
-          🇩🇪 Made in Germany · 🇪🇬 Perfected in Egypt
+          Born in Germany. Mastered in Egypt.
         </p>
       )}
     </div>

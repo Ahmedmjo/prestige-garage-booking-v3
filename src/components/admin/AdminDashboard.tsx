@@ -1724,10 +1724,45 @@ function BookingsManager({ pin }: { pin: string }) {
     setLoading(false);
   };
 
+  // Initial load + reload whenever the status filter changes.
   useEffect(() => {
+    // `load` is async (setState happens after an await, not synchronously),
+    // but the lint rule's static analysis can't see through the call.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [filter]);
+
+  // Keep the latest `load` in a ref so the polling interval (set up once) can
+  // always invoke the current closure without being re-created on every render.
+  // The ref is updated inside an effect (never during render) per React rules.
+  const loadRef = useRef(load);
+  useEffect(() => {
+    loadRef.current = load;
+  });
+
+  // Auto-refresh bookings every 15s + when the tab becomes visible again.
+  //
+  // This is what makes "the admin sees every booking immediately" true in
+  // practice: a customer can submit a booking at any moment, and without
+  // polling the admin would only discover it by manually switching filters or
+  // reloading the page. With this interval, new bookings surface within 15s
+  // with zero admin interaction.
+  useEffect(() => {
+    const POLL_MS = 15000;
+    const interval = setInterval(() => {
+      void loadRef.current();
+    }, POLL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void loadRef.current();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   const setStatus = async (b: BookingItem, status: BookingStatus) => {
     setUpdatingId(b.id);
@@ -1913,10 +1948,10 @@ function BookingsManager({ pin }: { pin: string }) {
                     <div className="flex justify-between">
                       <span className="text-white/40">السيارة</span>
                       <span className="text-left">
-                        {b.carModel}
-                        {b.carBrand && ` · ${b.carBrand}`}
-                        {b.carType && ` (${b.carType})`}
-                        {b.carPlate && ` · ${b.carPlate}`}
+                        {/* carModel is optional — join only the non-empty parts with " · " */}
+                        {[b.carModel, b.carBrand, b.carType, b.carPlate]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
                       </span>
                     </div>
                     {/* Notes shown immediately after car info */}
@@ -2334,37 +2369,13 @@ function CustomersManager({ pin }: { pin: string }) {
 }
 
 /* ============ BRANCH MEDIA HELPERS ============ */
-type BranchMedia = { map: string; image: string; video: string };
-function parseBranchMedia(mapUrl: string | null): BranchMedia {
-  const empty: BranchMedia = { map: "", image: "", video: "" };
-  if (!mapUrl) return empty;
-  // Try parsing as JSON first
-  try {
-    const trimmed = mapUrl.trim();
-    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-      const obj = JSON.parse(trimmed) as Partial<BranchMedia>;
-      return {
-        map: typeof obj.map === "string" ? obj.map : "",
-        image: typeof obj.image === "string" ? obj.image : "",
-        video: typeof obj.video === "string" ? obj.video : "",
-      };
-    }
-  } catch {
-    // fall through
-  }
-  // Plain map URL
-  return { map: mapUrl, image: "", video: "" };
-}
-
-function packBranchMedia(map: string, image: string, video: string): string | null {
-  const hasMedia = !!image || !!video;
-  if (!hasMedia) {
-    // No media — store plain map URL (or null if empty)
-    return map || null;
-  }
-  // Store as JSON to preserve all three URLs
-  return JSON.stringify({ map: map || "", image: image || "", video: video || "" });
-}
+// Use the shared helpers from @/lib/branch-media so the admin and customer
+// views always agree on how mapUrl is parsed.
+import {
+  parseBranchMedia,
+  packBranchMedia,
+  type BranchMedia,
+} from "@/lib/branch-media";
 
 /* ============ BRANCHES MANAGER ============ */
 function BranchesManager({ pin }: { pin: string }) {
@@ -2627,6 +2638,11 @@ function BranchesManager({ pin }: { pin: string }) {
                       <p className="text-[10px] font-bold text-white/55 flex items-center gap-1">
                         <ImageIcon size={11} className="text-[#ff4d6d]" />
                         ميديا الفرع (اختياري)
+                      </p>
+                      <p className="text-[9px] leading-relaxed text-white/40">
+                        تظهر الميديا للعميل في صفحة «تواصل معنا» ضمن قائمة الفروع —
+                        أيقونة الفرع تفتح الميديا بملء الشاشة، وزر الموقع يفتح الخريطة.
+                        للفيديو استخدم رابط Google Drive أو YouTube (للتجنب مشاكل حجم الرفع).
                       </p>
                       <MediaInputField
                         label="صورة الفرع"
@@ -2907,6 +2923,11 @@ function AddBranchModal({
             <p className="text-[11px] font-bold text-white/55 flex items-center gap-1">
               <ImageIcon size={12} className="text-[#ff4d6d]" />
               ميديا الفرع (اختياري)
+            </p>
+            <p className="text-[9px] leading-relaxed text-white/40">
+              تظهر الميديا للعميل في صفحة «تواصل معنا» ضمن قائمة الفروع —
+              أيقونة الفرع تفتح الميديا بملء الشاشة، وزر الموقع يفتح الخريطة.
+              للفيديو استخدم رابط Google Drive أو YouTube (للتجنب مشاكل حجم الرفع).
             </p>
             <MediaInputField
               label="صورة الفرع"
@@ -4230,6 +4251,54 @@ function SettingsManager({ pin }: { pin: string }) {
         </p>
       </div>
 
+      {/* ===== Branch Selection Toggle ===== */}
+      <div className="glass-card rounded-2xl p-4 space-y-3">
+        <div className="flex items-center gap-2 pb-2 border-b border-white/8">
+          <MapPin size={14} className="text-[#ff4d6d]" />
+          <h4 className="text-sm font-bold text-white">اختيار الفرع</h4>
+        </div>
+
+        <label className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] p-3">
+          <div>
+            <span className="text-sm font-semibold text-white">
+              تفعيل اختيار الفرع
+            </span>
+            <p className="text-[10px] text-white/45">
+              عند التفعيل: يمكن للعميل اختيار الفرع أثناء الحجز
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setForm({
+                ...form,
+                branchSelectionEnabled:
+                  form.branchSelectionEnabled === "false" ? "true" : "false",
+              })
+            }
+            className={cn(
+              "relative h-6 w-11 shrink-0 rounded-full transition",
+              form.branchSelectionEnabled !== "false"
+                ? "bg-[#DC143C]"
+                : "bg-white/15"
+            )}
+          >
+            <span
+              className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all"
+              style={{
+                insetInlineStart:
+                  form.branchSelectionEnabled !== "false"
+                    ? "calc(100% - 22px)"
+                    : "2px",
+              }}
+            />
+          </button>
+        </label>
+        <p className="text-[10px] text-white/40 leading-relaxed">
+          عند الإيقاف: يُخفى خيار اختيار الفرع من شاشة الحجز ويُرسل الحجز بدون فرع محدد.
+        </p>
+      </div>
+
       <div className="gold-divider my-1" />
 
       <h4 className="text-xs font-bold text-white/60 px-1">إعدادات عامة</h4>
@@ -4299,12 +4368,55 @@ function MediaInputField({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // ── SIZE GUARD ──────────────────────────────────────────────────────
+    // Vercel serverless function body size limit is ~4.5 MB. Base64 encoding
+    // inflates binary by ~33%, so a 3 MB file becomes ~4 MB in the payload.
+    // On Vercel, uploads larger than ~3.3 MB will silently fail when the
+    // admin tries to save the branch (the PUT /api/admin/branches/[id]
+    // request body is rejected). Even on local SQLite, a multi-MB base64
+    // string stored in the mapUrl column bloats the DB and can corrupt the
+    // packed JSON if it gets truncated mid-write.
+    //
+    // Rule of thumb:
+    //   - Images: keep under 1.5 MB (recommend 800px wide, JPEG quality 80)
+    //   - Videos: NEVER upload via "Upload" tab for production — host on
+    //             Google Drive / YouTube / Vercel Blob and paste the URL
+    //             via the "URL" or "Drive" tab instead.
+    const MAX_IMG_BYTES = 1.5 * 1024 * 1024; // 1.5 MB
+    const MAX_VIDEO_BYTES = 4 * 1024 * 1024; // 4 MB hard cap (will likely fail on Vercel anyway)
+    const isVideoFile = file.type.startsWith("video/");
+    const limit = isVideoFile ? MAX_VIDEO_BYTES : MAX_IMG_BYTES;
+
+    if (file.size > limit) {
+      const mb = (file.size / (1024 * 1024)).toFixed(2);
+      const limMb = (limit / (1024 * 1024)).toFixed(1);
+      toast.error(
+        isVideoFile
+          ? `الملف ${mb} ميجا — كبير جداً. استخدم رابط Google Drive أو YouTube للفيديوهات. (الحد الأقصى ${limMb}MB)`
+          : `الصورة ${mb} ميجا — كبيرة جداً. صغّر الصورة إلى أقل من ${limMb}MB. (يُفضّل 800px بجودة JPEG 80)`,
+      );
+      // reset the input so the user can pick another file
+      e.target.value = "";
+      return;
+    }
+
+    // Warn (but allow) for moderately large images
+    if (!isVideoFile && file.size > 0.8 * 1024 * 1024) {
+      const mb = (file.size / (1024 * 1024)).toFixed(2);
+      toast.info(`الصورة ${mb} ميجا — قد تعمل ببطء على الجوال. يُفضّل تصغيرها.`);
+    }
+
     setUploading(true);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
       onChange(dataUrl);
       setUploading(false);
+    };
+    reader.onerror = () => {
+      setUploading(false);
+      toast.error("فشل قراءة الملف. حاول مرة أخرى.");
     };
     reader.readAsDataURL(file);
   };

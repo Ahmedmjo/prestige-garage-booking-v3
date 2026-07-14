@@ -126,7 +126,7 @@ export function AdminLogin() {
       </div>
 
       <p className="mt-8 text-center text-[10px] text-white/30">
-        الرمز الافتراضي: 1234 — يمكن تغييره من الإعدادات
+        
       </p>
     </div>
   );

@@ -14,6 +14,7 @@ import { BookingsScreen } from "@/components/booking/BookingsScreen";
 import { AdminLogin } from "@/components/admin/AdminLogin";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { BrandCrown } from "@/components/brand/Logo";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { useLangEffect, useLang } from "@/lib/use-lang";
 
 export default function Page() {
@@ -94,6 +95,7 @@ export default function Page() {
         </AnimatePresence>
       </main>
       <BottomNav />
+      <InstallPrompt />
     </div>
   );
 }

@@ -17,6 +17,10 @@ const DEFAULTS: SiteSettings = {
   instagram: "https://instagram.com",
   facebook: "https://facebook.com",
   tiktok: "https://tiktok.com",
+  twitter: "https://twitter.com",
+  snapchat: "https://snapchat.com",
+  email: "prestigegarage.eg@gmail.com",
+  branchSelectionEnabled: "true",
   adminPin: "1234",
   currency: "EGP",
   currencyAr: "ج.م",
@@ -32,7 +36,9 @@ export async function getSettings(): Promise<SiteSettings> {
     const map: Record<string, string> = {};
     for (const r of rows) map[r.key] = r.value;
     return { ...DEFAULTS, ...map };
-  } catch {
+  } catch (e) {
+    // Log so Vercel shows when settings fall back to defaults (e.g. DB unreachable)
+    console.error("getSettings: falling back to DEFAULTS", e);
     return DEFAULTS;
   }
 }
