@@ -11,10 +11,13 @@ async function checkAuth(req: NextRequest) {
 // GET all settings
 export async function GET(req: NextRequest) {
   const settings = await getSettings();
-  // Don't expose the pin in the public read; admin already has it
+  // Don't expose secrets in the public read; admin already has them
   const isAuthed = await checkAuth(req);
   const safe = { ...settings } as Partial<typeof settings>;
-  if (!isAuthed) delete safe.adminPin;
+  if (!isAuthed) {
+    delete safe.adminPin;
+    delete safe.smtpPass;
+  }
   return NextResponse.json({ settings: safe });
 }
 

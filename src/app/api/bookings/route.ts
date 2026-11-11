@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
-import { sendBookingNotificationEmail } from "@/lib/mailer";
+import { sendBookingNotificationEmail, resolveSmtpCreds } from "@/lib/mailer";
 
 function genRef(): string {
   const part = () => Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -170,6 +170,7 @@ export async function POST(req: NextRequest) {
       const emailEnabled = settings.emailNotificationsEnabled !== "false";
       const recipient = (settings.bookingNotificationEmail || "").trim();
       if (emailEnabled && recipient) {
+        const creds = resolveSmtpCreds(settings);
         const result = await sendBookingNotificationEmail(recipient, {
           refCode: booking.refCode,
           customerName: booking.customerName,
@@ -189,7 +190,7 @@ export async function POST(req: NextRequest) {
           currencyAr: settings.currencyAr || "ج.م",
           brandNameAr: settings.brandNameAr || "بريستيج جاراج",
           createdAt: booking.createdAt,
-        });
+        }, creds);
         if (!result.ok) {
           console.error("[bookings] email notification not sent:", result.error);
         }

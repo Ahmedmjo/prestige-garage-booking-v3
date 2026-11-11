@@ -4073,10 +4073,15 @@ function SettingsManager({ pin }: { pin: string }) {
   const [testing, setTesting] = useState(false);
   const sendTest = async () => {
     setTesting(true);
-    // نحفظ أولاً حتى يُستخدم البريد المكتوب في الحقل
+    // نحفظ أولاً حتى تُستخدم القيم المكتوبة في الحقول
     await adminUpdateSettings(pin, {
       bookingNotificationEmail: form.bookingNotificationEmail ?? "",
       emailNotificationsEnabled: form.emailNotificationsEnabled ?? "true",
+      smtpUser: form.smtpUser ?? "",
+      smtpPass: form.smtpPass ?? "",
+      smtpHost: form.smtpHost ?? "smtp.gmail.com",
+      smtpPort: form.smtpPort ?? "465",
+      smtpSecure: form.smtpSecure ?? "true",
     });
     const r = await adminSendTestEmail(pin);
     setTesting(false);
@@ -4377,6 +4382,42 @@ function SettingsManager({ pin }: { pin: string }) {
           />
         </label>
 
+        <div className="gold-divider my-1" />
+
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-white/55">
+            بريد Gmail المُرسِل
+          </span>
+          <input
+            type="email"
+            dir="ltr"
+            placeholder="Prestigegarage.eg@gmail.com"
+            value={form.smtpUser ?? ""}
+            onChange={(e) => setForm({ ...form, smtpUser: e.target.value })}
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-white/55">
+            كلمة مرور التطبيق (16 حرفاً)
+          </span>
+          <input
+            type="password"
+            dir="ltr"
+            autoComplete="off"
+            placeholder="abcd efgh ijkl mnop"
+            value={form.smtpPass ?? ""}
+            onChange={(e) => setForm({ ...form, smtpPass: e.target.value })}
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+          />
+          <p className="mt-1 text-[10px] text-white/40 leading-relaxed">
+            تُنشأ من حساب Google: الإعدادات ← الأمان ← التحقق بخطوتين ← كلمات مرور
+            التطبيقات (myaccount.google.com/apppasswords) — احذف المسافات أو اتركها
+            كما هي، كلاهما يعمل.
+          </p>
+        </label>
+
         <button
           onClick={sendTest}
           disabled={testing}
@@ -4391,8 +4432,9 @@ function SettingsManager({ pin }: { pin: string }) {
         </button>
 
         <p className="text-[10px] text-white/40 leading-relaxed">
-          يعمل الإرسال بعد ضبط SMTP_USER و SMTP_PASS في متغيرات البيئة على Vercel
-          (كلمة مرور تطبيق Gmail) — الخطوات في ملف README بقسم إشعارات البريد.
+          اكتب بريد المُرسِل وكلمة مرور التطبيق أعلاه ثم اضغط (إرسال بريد تجريبي) —
+          كل شيء يُحفظ هنا في الموقع ولا يحتاج أي إعداد خارجي. الخطوات التفصيلية في
+          ملف README بقسم إشعارات البريد.
         </p>
       </div>
 

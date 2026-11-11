@@ -150,6 +150,11 @@ export interface SiteSettings {
   slotDurationMin: string;
   emailNotificationsEnabled: string;
   bookingNotificationEmail: string;
+  smtpUser: string;
+  smtpPass: string;
+  smtpHost: string;
+  smtpPort: string;
+  smtpSecure: string;
   [key: string]: string;
 }
 

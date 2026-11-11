@@ -29,6 +29,13 @@ const DEFAULTS: SiteSettings = {
   // إشعارات البريد: البريد الذي تستقبل تفاصيل الحجوزات الجديدة
   emailNotificationsEnabled: "true",
   bookingNotificationEmail: "Prestigegarage.eg@gmail.com",
+  // بيانات SMTP (تُضبط من لوحة الأدمن — تُخزّن في قاعدة البيانات)
+  // البريد المرسل عادة = نفس البريد المستقبل (Gmail)
+  smtpUser: "",
+  smtpPass: "",
+  smtpHost: "smtp.gmail.com",
+  smtpPort: "465",
+  smtpSecure: "true",
   aboutAr: "وجهة مصر الرائدة للعناية الفاخرة بالسيارات. نجمع بين التكنولوجيا الألمانية والحرفية المتخصصة لتحقيق نتائج لا مثيل لها لسيارتك.",
   aboutEn: "Egypt's premier destination for luxury car care. We combine German technology with expert craftsmanship to deliver unmatched results for your vehicle.",
 };

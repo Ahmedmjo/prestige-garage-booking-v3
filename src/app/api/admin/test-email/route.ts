@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSettings } from "@/lib/settings";
-import { sendTestEmail, isSmtpConfigured } from "@/lib/mailer";
+import { sendTestEmail, resolveSmtpCreds, isSmtpConfigured } from "@/lib/mailer";
 
 /**
  * POST /api/admin/test-email
@@ -26,19 +26,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!isSmtpConfigured()) {
+    if (!isSmtpConfigured(resolveSmtpCreds(settings))) {
       return NextResponse.json(
         {
           ok: false,
           error: "smtp_not_configured",
           message:
-            "لم يتم ضبط البريد المرسل بعد: أضف SMTP_USER و SMTP_PASS في متغيرات البيئة على Vercel ثم أعد النشر — راجع ملف README (قسم إشعارات البريد)",
+            "أدخل بريد Gmail المرسل وكلمة مرور التطبيق في الحقلين بالأسفل ثم احفظ — الخطوات في ملف README (قسم إشعارات البريد)",
         },
         { status: 400 }
       );
     }
 
-    const result = await sendTestEmail(to, settings.brandNameAr || "بريستيج جاراج");
+    const result = await sendTestEmail(
+      to,
+      settings.brandNameAr || "بريستيج جاراج",
+      resolveSmtpCreds(settings)
+    );
     if (!result.ok) {
       return NextResponse.json(
         {

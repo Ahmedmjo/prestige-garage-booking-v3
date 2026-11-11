@@ -1,7 +1,8 @@
 /**
  * Mailer — إشعارات البريد الإلكتروني عند وصول حجز جديد
  * ------------------------------------------------------
- * يستخدم SMTP عبر متغيرات البيئة (افتراضياً Gmail):
+ * يستخدم SMTP — البيانات تأتي من إعدادات لوحة الأدمن (قاعدة البيانات)
+ * مع احتياطي لمتغيرات البيئة على Vercel إن وُجدت:
  *   SMTP_USER   -> بريد Gmail المرسل (مثال: Prestigegarage.eg@gmail.com)
  *   SMTP_PASS   -> كلمة مرور التطبيق (App Password) من حساب Google
  *   SMTP_HOST   -> افتراضي smtp.gmail.com
@@ -13,26 +14,51 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 
-const SMTP_HOST = process.env.SMTP_HOST || "smtp.gmail.com";
-const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
-const SMTP_SECURE = process.env.SMTP_SECURE !== "false";
-const SMTP_USER = process.env.SMTP_USER || "";
-const SMTP_PASS = process.env.SMTP_PASS || "";
+/* ================= بيانات اعتماد SMTP ================= */
 
-export function isSmtpConfigured(): boolean {
-  return Boolean(SMTP_USER && SMTP_PASS);
+export interface SmtpCreds {
+  user: string;
+  pass: string;
+  host: string;
+  port: number;
+  secure: boolean;
 }
 
+/** يبني بيانات الاعتماد: أولوية إعدادات لوحة الأدمن ثم متغيرات البيئة */
+export function resolveSmtpCreds(settings: {
+  smtpUser?: string;
+  smtpPass?: string;
+  smtpHost?: string;
+  smtpPort?: string;
+  smtpSecure?: string;
+}): SmtpCreds {
+  const user = (settings.smtpUser || process.env.SMTP_USER || "").trim();
+  const pass = (settings.smtpPass || process.env.SMTP_PASS || "").trim();
+  const host = (settings.smtpHost || process.env.SMTP_HOST || "smtp.gmail.com").trim();
+  const port = Number(settings.smtpPort || process.env.SMTP_PORT) || 465;
+  const secure =
+    (settings.smtpSecure || process.env.SMTP_SECURE || "true").trim() !== "false";
+  return { user, pass, host, port, secure };
+}
+
+export function isSmtpConfigured(creds: SmtpCreds): boolean {
+  return Boolean(creds.user && creds.pass);
+}
+
+/* transporter مُخزّن مؤقتاً حسب بيانات الاعتماد */
+let cachedKey = "";
 let cachedTransporter: Transporter | null = null;
 
-function getTransporter(): Transporter {
-  if (!cachedTransporter) {
+function getTransporter(creds: SmtpCreds): Transporter {
+  const key = `${creds.user}::${creds.pass}::${creds.host}::${creds.port}::${creds.secure}`;
+  if (!cachedTransporter || cachedKey !== key) {
     cachedTransporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_SECURE,
-      auth: { user: SMTP_USER, pass: SMTP_PASS },
+      host: creds.host,
+      port: creds.port,
+      secure: creds.secure,
+      auth: { user: creds.user, pass: creds.pass },
     });
+    cachedKey = key;
   }
   return cachedTransporter;
 }
@@ -270,12 +296,13 @@ export interface SendResult {
 /** يرسل بريد تفاصيل الحجز الجديد — لا يرمي استثناءات أبداً */
 export async function sendBookingNotificationEmail(
   to: string,
-  data: BookingEmailData
+  data: BookingEmailData,
+  creds: SmtpCreds
 ): Promise<SendResult> {
   try {
-    if (!isSmtpConfigured()) {
+    if (!isSmtpConfigured(creds)) {
       console.warn(
-        "[mailer] SMTP not configured (SMTP_USER / SMTP_PASS missing) — booking email skipped"
+        "[mailer] SMTP not configured (admin panel / env) — booking email skipped"
       );
       return { ok: false, error: "smtp_not_configured" };
     }
@@ -285,8 +312,8 @@ export async function sendBookingNotificationEmail(
     }
 
     const { subject, html, text } = renderBookingEmail(data);
-    const info = await getTransporter().sendMail({
-      from: `"${data.brandNameAr}" <${SMTP_USER}>`,
+    const info = await getTransporter(creds).sendMail({
+      from: `"${data.brandNameAr}" <${creds.user}>`,
       to,
       subject,
       html,
@@ -305,14 +332,15 @@ export async function sendBookingNotificationEmail(
 /** بريد تجريبي للتأكد من صحة إعدادات SMTP */
 export async function sendTestEmail(
   to: string,
-  brandNameAr: string
+  brandNameAr: string,
+  creds: SmtpCreds
 ): Promise<SendResult> {
   try {
-    if (!isSmtpConfigured()) {
+    if (!isSmtpConfigured(creds)) {
       return { ok: false, error: "smtp_not_configured" };
     }
-    const info = await getTransporter().sendMail({
-      from: `"${brandNameAr}" <${SMTP_USER}>`,
+    const info = await getTransporter(creds).sendMail({
+      from: `"${brandNameAr}" <${creds.user}>`,
       to,
       subject: `بريد تجريبي — نظام حجوزات ${brandNameAr}`,
       html: `<!DOCTYPE html>
