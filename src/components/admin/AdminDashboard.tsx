@@ -41,6 +41,8 @@ import {
   Wallet,
   CalendarRange,
   MessageSquare,
+  Mail,
+  Send,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { useSettings } from "@/lib/use-settings";
@@ -70,6 +72,7 @@ import {
   adminUpdateOffer,
   adminDeleteOffer,
   adminFetchReport,
+  adminSendTestEmail,
 } from "@/lib/api";
 import {
   Table,
@@ -4067,6 +4070,20 @@ function SettingsManager({ pin }: { pin: string }) {
     else toast.error("فشل الحفظ");
   };
 
+  const [testing, setTesting] = useState(false);
+  const sendTest = async () => {
+    setTesting(true);
+    // نحفظ أولاً حتى يُستخدم البريد المكتوب في الحقل
+    await adminUpdateSettings(pin, {
+      bookingNotificationEmail: form.bookingNotificationEmail ?? "",
+      emailNotificationsEnabled: form.emailNotificationsEnabled ?? "true",
+    });
+    const r = await adminSendTestEmail(pin);
+    setTesting(false);
+    if (r.ok) toast.success("تم إرسال البريد التجريبي — تحقق من صندوق الوارد");
+    else toast.error(r.message || "فشل إرسال البريد التجريبي");
+  };
+
   const fields: { key: keyof SiteSettings; label: string; type?: string }[] = [
     { key: "brandName", label: "اسم البراند (إنجليزي)" },
     { key: "brandNameAr", label: "اسم البراند (عربي)" },
@@ -4296,6 +4313,86 @@ function SettingsManager({ pin }: { pin: string }) {
         </label>
         <p className="text-[10px] text-white/40 leading-relaxed">
           عند الإيقاف: يُخفى خيار اختيار الفرع من شاشة الحجز ويُرسل الحجز بدون فرع محدد.
+        </p>
+      </div>
+
+      {/* ===== Email Notifications ===== */}
+      <div className="glass-card rounded-2xl p-4 space-y-3">
+        <div className="flex items-center gap-2 pb-2 border-b border-white/8">
+          <Mail size={14} className="text-[#ff4d6d]" />
+          <h4 className="text-sm font-bold text-white">إشعارات البريد الإلكتروني</h4>
+        </div>
+
+        {/* enable/disable toggle */}
+        <label className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] p-3">
+          <div>
+            <span className="text-sm font-semibold text-white">
+              إشعار عند حجز جديد
+            </span>
+            <p className="text-[10px] text-white/45">
+              يصل بريد بتفاصيل كل حجز جديد فور إنشائه
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setForm({
+                ...form,
+                emailNotificationsEnabled:
+                  form.emailNotificationsEnabled === "false" ? "true" : "false",
+              })
+            }
+            className={cn(
+              "relative h-6 w-11 shrink-0 rounded-full transition",
+              form.emailNotificationsEnabled !== "false"
+                ? "bg-[#DC143C]"
+                : "bg-white/15"
+            )}
+          >
+            <span
+              className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all"
+              style={{
+                insetInlineStart:
+                  form.emailNotificationsEnabled !== "false"
+                    ? "calc(100% - 22px)"
+                    : "2px",
+              }}
+            />
+          </button>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-white/55">
+            البريد المستقبل للحجوزات
+          </span>
+          <input
+            type="email"
+            dir="ltr"
+            placeholder="Prestigegarage.eg@gmail.com"
+            value={form.bookingNotificationEmail ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, bookingNotificationEmail: e.target.value })
+            }
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+          />
+        </label>
+
+        <button
+          onClick={sendTest}
+          disabled={testing}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#DC143C]/40 bg-[#DC143C]/10 py-2.5 text-xs font-bold text-white hover:bg-[#DC143C]/20 disabled:opacity-50 transition active:scale-[0.98]"
+        >
+          {testing ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Send size={14} />
+          )}
+          إرسال بريد تجريبي
+        </button>
+
+        <p className="text-[10px] text-white/40 leading-relaxed">
+          يعمل الإرسال بعد ضبط SMTP_USER و SMTP_PASS في متغيرات البيئة على Vercel
+          (كلمة مرور تطبيق Gmail) — الخطوات في ملف README بقسم إشعارات البريد.
         </p>
       </div>
 

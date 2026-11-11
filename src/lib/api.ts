@@ -268,3 +268,15 @@ export async function adminFetchReport(
   if (!res.ok) return null;
   return res.json();
 }
+
+// ===== Email notifications =====
+export async function adminSendTestEmail(
+  pin: string
+): Promise<{ ok: boolean; message?: string }> {
+  const res = await fetch("/api/admin/test-email", {
+    method: "POST",
+    headers: { "x-admin-pin": pin },
+  });
+  const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: string };
+  return { ok: res.ok && data?.ok !== false, message: data?.message };
+}

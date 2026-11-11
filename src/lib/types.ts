@@ -148,6 +148,8 @@ export interface SiteSettings {
   currencyAr: string;
   leadTimeHours: string;
   slotDurationMin: string;
+  emailNotificationsEnabled: string;
+  bookingNotificationEmail: string;
   [key: string]: string;
 }
 

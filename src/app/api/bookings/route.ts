@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
+import { sendBookingNotificationEmail } from "@/lib/mailer";
 
 function genRef(): string {
   const part = () => Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -129,6 +130,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // (يُستخدم لاحقاً في بريد الإشعار)
+    let branchNameAr: string | null = null;
+    if (branchId) {
+      const branch = await db.branch.findUnique({
+        where: { id: String(branchId) },
+      });
+      branchNameAr = branch?.nameAr || branch?.name || null;
+    }
+
     const refCode = genRef();
     const booking = await db.booking.create({
       data: {
@@ -153,6 +163,40 @@ export async function POST(req: NextRequest) {
       },
       include: { service: { include: { variants: true } } },
     });
+
+    // ===== إشعار البريد الإلكتروني للحجوزات الجديدة =====
+    // الإرسال لا يفشل الحجز أبداً — أي خطأ يُسجَّل فقط في اللوجات
+    try {
+      const emailEnabled = settings.emailNotificationsEnabled !== "false";
+      const recipient = (settings.bookingNotificationEmail || "").trim();
+      if (emailEnabled && recipient) {
+        const result = await sendBookingNotificationEmail(recipient, {
+          refCode: booking.refCode,
+          customerName: booking.customerName,
+          phone: booking.phone,
+          carType: booking.carType,
+          carBrand: booking.carBrand,
+          carModel: booking.carModel,
+          carPlate: booking.carPlate,
+          variantName: booking.variantName,
+          serviceNameAr: service.nameAr || service.name,
+          branchNameAr,
+          date: booking.date,
+          time: booking.time,
+          notes: booking.notes,
+          address: booking.address,
+          totalPrice: booking.totalPrice,
+          currencyAr: settings.currencyAr || "ج.م",
+          brandNameAr: settings.brandNameAr || "بريستيج جاراج",
+          createdAt: booking.createdAt,
+        });
+        if (!result.ok) {
+          console.error("[bookings] email notification not sent:", result.error);
+        }
+      }
+    } catch (emailErr) {
+      console.error("[bookings] email notification crashed:", emailErr);
+    }
 
     return NextResponse.json({ booking });
   } catch (e) {

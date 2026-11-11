@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  // nodemailer يُحمَّل كحزمة خارجية على الخادم (يتجنب مشاكل التجميع في serverless)
+  serverExternalPackages: ["nodemailer"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "drive.google.com" },

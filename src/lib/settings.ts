@@ -26,6 +26,9 @@ const DEFAULTS: SiteSettings = {
   currencyAr: "ج.م",
   leadTimeHours: "2",
   slotDurationMin: "60",
+  // إشعارات البريد: البريد الذي تستقبل تفاصيل الحجوزات الجديدة
+  emailNotificationsEnabled: "true",
+  bookingNotificationEmail: "Prestigegarage.eg@gmail.com",
   aboutAr: "وجهة مصر الرائدة للعناية الفاخرة بالسيارات. نجمع بين التكنولوجيا الألمانية والحرفية المتخصصة لتحقيق نتائج لا مثيل لها لسيارتك.",
   aboutEn: "Egypt's premier destination for luxury car care. We combine German technology with expert craftsmanship to deliver unmatched results for your vehicle.",
 };
