@@ -4097,12 +4097,13 @@ function SettingsManager({ pin }: { pin: string }) {
     // نحفظ أولاً حتى تُستخدم القيم المكتوبة في الحقول
     await adminUpdateSettings(pin, {
       whatsappNotificationsEnabled: form.whatsappNotificationsEnabled ?? "true",
-      whatsappProvider: form.whatsappProvider ?? "ultramsg",
+      whatsappProvider: form.whatsappProvider ?? "greenapi",
       whatsappToPhone: form.whatsappToPhone ?? "",
       whatsappApiKey: form.whatsappApiKey ?? "",
       whatsappUrlTemplate: form.whatsappUrlTemplate ?? "",
       whatsappInstanceId: form.whatsappInstanceId ?? "",
       whatsappToken: form.whatsappToken ?? "",
+      whatsappApiInstanceUrl: form.whatsappApiInstanceUrl ?? "",
       whatsappMetaToken: form.whatsappMetaToken ?? "",
       whatsappMetaPhoneId: form.whatsappMetaPhoneId ?? "",
     });
@@ -4527,14 +4528,17 @@ function SettingsManager({ pin }: { pin: string }) {
             مزود الإرسال
           </span>
           <select
-            value={form.whatsappProvider ?? "ultramsg"}
+            value={form.whatsappProvider ?? "greenapi"}
             onChange={(e) =>
               setForm({ ...form, whatsappProvider: e.target.value })
             }
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-[#DC143C]/50 focus:outline-none"
           >
+            <option value="greenapi" className="bg-background">
+              GREEN-API (موصى به — خطة مجانية دائمة)
+            </option>
             <option value="ultramsg" className="bg-background">
-              UltraMsg (موصى به — أسهل إعداد)
+              UltraMsg (تجربة ٣ أيام ثم ٣٩$ شهرياً)
             </option>
             <option value="meta" className="bg-background">
               واتساب Cloud API الرسمي (Meta)
@@ -4572,7 +4576,44 @@ function SettingsManager({ pin }: { pin: string }) {
           </label>
         )}
 
-        {(form.whatsappProvider ?? "ultramsg") === "ultramsg" && (
+        {(form.whatsappProvider ?? "greenapi") === "greenapi" && (
+          <>
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-semibold text-white/55">
+                معرّف النسخة (idInstance)
+              </span>
+              <input
+                type="text"
+                dir="ltr"
+                autoComplete="off"
+                placeholder="7103123456"
+                value={form.whatsappInstanceId ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, whatsappInstanceId: e.target.value })
+                }
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-semibold text-white/55">
+                التوكن (apiTokenInstance)
+              </span>
+              <input
+                type="password"
+                dir="ltr"
+                autoComplete="off"
+                placeholder="d2b5f1e8g4c..."
+                value={form.whatsappToken ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, whatsappToken: e.target.value })
+                }
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+              />
+            </label>
+          </>
+        )}
+
+        {form.whatsappProvider === "ultramsg" && (
           <>
             <label className="block">
               <span className="mb-1 block text-[11px] font-semibold text-white/55">
@@ -4677,8 +4718,41 @@ function SettingsManager({ pin }: { pin: string }) {
           إرسال رسالة تجريبية
         </button>
 
-        {(form.whatsappProvider ?? "ultramsg") === "ultramsg" && (
+        {(form.whatsappProvider ?? "greenapi") === "greenapi" && (
           <div className="rounded-xl border border-[#25D366]/30 bg-[#25D366]/[0.06] p-3 space-y-1.5">
+            <p className="text-[10px] font-bold text-white/60">
+              خطوات GREEN-API (مرة واحدة — حوالي ٣ دقائق — خطة مجانية دائمة):
+            </p>
+            <p className="text-[10px] text-white/45 leading-relaxed">
+              ١. سجّل حساباً مجانياً في{" "}
+              <a
+                href="https://console.green-api.com/"
+                target="_blank"
+                rel="noreferrer"
+                dir="ltr"
+                className="text-[#25D366] underline"
+              >
+                console.green-api.com
+              </a>{" "}
+              (بريد إلكتروني + كلمة مرور فقط)
+            </p>
+            <p className="text-[10px] text-white/45 leading-relaxed">
+              ٢. أنشئ نسخة (Create instance) جديدة، ثم اضغط زر (Get QR) وامسح
+              الكود بتطبيق واتساب أي رقم عندك — الرقم ده هيكون المُرسِل للإشعارات
+            </p>
+            <p className="text-[10px] text-white/45 leading-relaxed">
+              ٣. من بيانات النسخة انسخ (idInstance) و (apiTokenInstance) والصقهما
+              في الحقلين بالأعلى ثم اضغط (إرسال رسالة تجريبية)
+            </p>
+            <p className="text-[10px] text-white/40 leading-relaxed">
+              الخطة المجانية (Developer) تسمح بالإرسال لحد ٣ محادثات — وإحنا
+              محتاجين محادثة واحدة بس (رقم الشركة)، يعني مجاني دائماً بدون رسوم.
+            </p>
+          </div>
+        )}
+
+        {form.whatsappProvider === "ultramsg" && (
+          <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3 space-y-1.5">
             <p className="text-[10px] font-bold text-white/60">
               خطوات UltraMsg (مرة واحدة — حوالي دقيقتين):
             </p>
@@ -4703,9 +4777,9 @@ function SettingsManager({ pin }: { pin: string }) {
               ٣. انسخ (Instance ID) و (Token) الظاهرين في لوحة UltraMsg والصقهما
               في الحقلين بالأعلى ثم اضغط (إرسال رسالة تجريبية)
             </p>
-            <p className="text-[10px] text-white/40 leading-relaxed">
-              نصيحة: الرسائل هتوصل من الرقم المربوط بـ UltraMsg إلى رقم الشركة
-              المكتوب في الحقل الأول. الحساب المجاني للتجربة كافي للبداية.
+            <p className="text-[10px] text-[#ff8fa3] leading-relaxed">
+              تنبيه: التجربة المجانية ٣ أيام فقط، وبعدها الاشتراك ٣٩$ شهرياً —
+              استخدمها لو جربت GREEN-API ولم تناسبك.
             </p>
           </div>
         )}

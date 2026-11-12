@@ -37,14 +37,15 @@ const DEFAULTS: SiteSettings = {
   smtpPort: "465",
   smtpSecure: "true",
   // إشعارات واتساب: تُرسل لرقم الشركة عند كل حجز جديد
-  // المزودات: ultramsg (موصى به) | meta | callmebot | textmebot | custom
+  // المزودات: greenapi (موصى به — مجاني دائم) | ultramsg | meta | callmebot | textmebot | custom
   whatsappNotificationsEnabled: "true",
-  whatsappProvider: "ultramsg",
+  whatsappProvider: "greenapi",
   whatsappToPhone: "01505777755",
   whatsappApiKey: "",
   whatsappUrlTemplate: "",
   whatsappInstanceId: "",
   whatsappToken: "",
+  whatsappApiInstanceUrl: "",
   whatsappMetaToken: "",
   whatsappMetaPhoneId: "",
   aboutAr: "وجهة مصر الرائدة للعناية الفاخرة بالسيارات. نجمع بين التكنولوجيا الألمانية والحرفية المتخصصة لتحقيق نتائج لا مثيل لها لسيارتك.",

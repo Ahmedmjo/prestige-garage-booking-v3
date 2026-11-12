@@ -51,6 +51,10 @@ export async function POST(req: NextRequest) {
         {
           ok: false,
           message: `فشل الإرسال: ${result.error || "خطأ غير معروف"} — راجع بيانات المزوّد في الإعدادات${
+            config.provider === "greenapi"
+              ? " وتأكد من مسح كود QR من كونسول GREEN-API وأن الخطة Developer مفعّلة"
+              : ""
+          }${
             config.provider === "ultramsg"
               ? " وتأكد من مسح كود QR من لوحة UltraMsg"
               : ""
