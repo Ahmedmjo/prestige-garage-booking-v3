@@ -209,11 +209,15 @@ export async function sendWhatsAppText(
   }
 }
 
-/** إشعار واتساب بتفاصيل الحجز الجديد */
+/** إشعار واتساب بتفاصيل الحجز الجديد — مع إعادة محاولة واحدة عند الفشل المؤقت */
 export async function sendBookingWhatsAppNotification(
   c: WhatsAppConfig,
   data: BookingWhatsAppData
 ): Promise<SendResult> {
+  const first = await sendWhatsAppText(c, renderBookingWhatsAppMessage(data));
+  if (first.ok) return first;
+  // إعادة محاولة واحدة بعد ثانية ونصف (تقلبات شبكة المزوّد أو انشغاله)
+  await new Promise((r) => setTimeout(r, 1500));
   return sendWhatsAppText(c, renderBookingWhatsAppMessage(data));
 }
 

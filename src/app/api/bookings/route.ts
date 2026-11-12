@@ -7,6 +7,10 @@ import {
   resolveWhatsAppConfig,
 } from "@/lib/whatsapp";
 
+// مهلة الدالة على Vercel — الافتراضي (١٠ ثوانٍ في خطة Hobby) لا يكفي
+// بريد SMTP + واتساب معاً بعد إقلاع قاعدة البيانات البارد
+export const maxDuration = 60;
+
 function genRef(): string {
   const part = () => Math.random().toString(36).slice(2, 6).toUpperCase();
   return `PG-${part()}-${part()}`;
@@ -168,71 +172,80 @@ export async function POST(req: NextRequest) {
       include: { service: { include: { variants: true } } },
     });
 
-    // ===== إشعار البريد الإلكتروني للحجوزات الجديدة =====
-    // الإرسال لا يفشل الحجز أبداً — أي خطأ يُسجَّل فقط في اللوجات
-    try {
-      const emailEnabled = settings.emailNotificationsEnabled !== "false";
-      const recipient = (settings.bookingNotificationEmail || "").trim();
-      if (emailEnabled && recipient) {
-        const creds = resolveSmtpCreds(settings);
-        const result = await sendBookingNotificationEmail(recipient, {
-          refCode: booking.refCode,
-          customerName: booking.customerName,
-          phone: booking.phone,
-          carType: booking.carType,
-          carBrand: booking.carBrand,
-          carModel: booking.carModel,
-          carPlate: booking.carPlate,
-          variantName: booking.variantName,
-          serviceNameAr: service.nameAr || service.name,
-          branchNameAr,
-          date: booking.date,
-          time: booking.time,
-          notes: booking.notes,
-          address: booking.address,
-          totalPrice: booking.totalPrice,
-          currencyAr: settings.currencyAr || "ج.م",
-          brandNameAr: settings.brandNameAr || "بريستيج جاراج",
-          createdAt: booking.createdAt,
-        }, creds);
-        if (!result.ok) {
-          console.error("[bookings] email notification not sent:", result.error);
+    // ===== الإشعارات (بريد + واتساب) — بالتوازي لا بالتتابع =====
+    // الإرسال لا يفشل الحجز أبداً — أي خطأ يُسجَّل فقط في اللوجات.
+    // التوازي مهم: لو استُهل الوقت في بريد SMTP البطيء أولاً تُقطَع رسالة
+    // واتساب اللاحقة عند انتهاء مهلة الدالة (Vercel) — بذلك يبدأ الاثنان معاً.
+    const notifyEmail = async () => {
+      try {
+        const emailEnabled = settings.emailNotificationsEnabled !== "false";
+        const recipient = (settings.bookingNotificationEmail || "").trim();
+        if (emailEnabled && recipient) {
+          const creds = resolveSmtpCreds(settings);
+          const result = await sendBookingNotificationEmail(recipient, {
+            refCode: booking.refCode,
+            customerName: booking.customerName,
+            phone: booking.phone,
+            carType: booking.carType,
+            carBrand: booking.carBrand,
+            carModel: booking.carModel,
+            carPlate: booking.carPlate,
+            variantName: booking.variantName,
+            serviceNameAr: service.nameAr || service.name,
+            branchNameAr,
+            date: booking.date,
+            time: booking.time,
+            notes: booking.notes,
+            address: booking.address,
+            totalPrice: booking.totalPrice,
+            currencyAr: settings.currencyAr || "ج.م",
+            brandNameAr: settings.brandNameAr || "بريستيج جاراج",
+            createdAt: booking.createdAt,
+          }, creds);
+          if (!result.ok) {
+            console.error("[bookings] email notification not sent:", result.error);
+          }
         }
+      } catch (emailErr) {
+        console.error("[bookings] email notification crashed:", emailErr);
       }
-    } catch (emailErr) {
-      console.error("[bookings] email notification crashed:", emailErr);
-    }
+    };
 
-    // ===== إشعار واتساب برقم الشركة للحجوزات الجديدة =====
-    // الإرسال لا يفشل الحجز أبداً — أي خطأ يُسجّل فقط في اللوجات
-    try {
-      const waEnabled = settings.whatsappNotificationsEnabled !== "false";
-      if (waEnabled) {
-        const waConfig = resolveWhatsAppConfig(settings);
-        const waResult = await sendBookingWhatsAppNotification(waConfig, {
-          refCode: booking.refCode,
-          customerName: booking.customerName,
-          phone: booking.phone,
-          carType: booking.carType,
-          carBrand: booking.carBrand,
-          carModel: booking.carModel,
-          variantName: booking.variantName,
-          serviceNameAr: service.nameAr || service.name,
-          branchNameAr,
-          date: booking.date,
-          time: booking.time,
-          notes: booking.notes,
-          totalPrice: booking.totalPrice,
-          currencyAr: settings.currencyAr || "ج.م",
-          brandNameAr: settings.brandNameAr || "بريستيج جاراج",
-        });
-        if (!waResult.ok) {
-          console.error("[bookings] whatsapp notification not sent:", waResult.error);
+    const notifyWhatsApp = async () => {
+      try {
+        const waEnabled = settings.whatsappNotificationsEnabled !== "false";
+        if (waEnabled) {
+          const waConfig = resolveWhatsAppConfig(settings);
+          const waResult = await sendBookingWhatsAppNotification(waConfig, {
+            refCode: booking.refCode,
+            customerName: booking.customerName,
+            phone: booking.phone,
+            carType: booking.carType,
+            carBrand: booking.carBrand,
+            carModel: booking.carModel,
+            variantName: booking.variantName,
+            serviceNameAr: service.nameAr || service.name,
+            branchNameAr,
+            date: booking.date,
+            time: booking.time,
+            notes: booking.notes,
+            totalPrice: booking.totalPrice,
+            currencyAr: settings.currencyAr || "ج.م",
+            brandNameAr: settings.brandNameAr || "بريستيج جاراج",
+          });
+          if (!waResult.ok) {
+            console.error(
+              `[bookings] whatsapp notification not sent (${booking.refCode}):`,
+              waResult.error
+            );
+          }
         }
+      } catch (waErr) {
+        console.error("[bookings] whatsapp notification crashed:", waErr);
       }
-    } catch (waErr) {
-      console.error("[bookings] whatsapp notification crashed:", waErr);
-    }
+    };
+
+    await Promise.allSettled([notifyEmail(), notifyWhatsApp()]);
 
     return NextResponse.json({ booking });
   } catch (e) {
