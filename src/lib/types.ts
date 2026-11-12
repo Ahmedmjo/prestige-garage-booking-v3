@@ -155,6 +155,11 @@ export interface SiteSettings {
   smtpHost: string;
   smtpPort: string;
   smtpSecure: string;
+  whatsappNotificationsEnabled: string;
+  whatsappProvider: string;
+  whatsappToPhone: string;
+  whatsappApiKey: string;
+  whatsappUrlTemplate: string;
   [key: string]: string;
 }
 

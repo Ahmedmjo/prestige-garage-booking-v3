@@ -98,14 +98,14 @@ const WEEKDAYS_AR = [
   "السبت",
 ];
 
-function weekdayAr(dateStr: string): string {
+export function weekdayAr(dateStr: string): string {
   const d = new Date(`${dateStr}T12:00:00`);
   if (isNaN(d.getTime())) return "";
   return WEEKDAYS_AR[d.getDay()] ?? "";
 }
 
 /** "13:30" -> "1:30 م" */
-function timeAr(timeStr: string): string {
+export function timeAr(timeStr: string): string {
   const [hRaw, mRaw] = timeStr.split(":");
   const h = Number(hRaw);
   if (isNaN(h)) return timeStr;
@@ -114,7 +114,7 @@ function timeAr(timeStr: string): string {
   return `${h12}:${(mRaw || "00").padStart(2, "0")} ${suffix}`;
 }
 
-function priceAr(value: number, currencyAr: string): string {
+export function priceAr(value: number, currencyAr: string): string {
   const rounded = Math.round(value);
   const n = Number.isFinite(rounded)
     ? rounded.toLocaleString("en-US")

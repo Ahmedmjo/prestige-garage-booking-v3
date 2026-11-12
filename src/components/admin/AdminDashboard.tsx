@@ -43,6 +43,7 @@ import {
   MessageSquare,
   Mail,
   Send,
+  MessageCircle,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { useSettings } from "@/lib/use-settings";
@@ -73,6 +74,7 @@ import {
   adminDeleteOffer,
   adminFetchReport,
   adminSendTestEmail,
+  adminSendTestWhatsapp,
 } from "@/lib/api";
 import {
   Table,
@@ -4089,6 +4091,23 @@ function SettingsManager({ pin }: { pin: string }) {
     else toast.error(r.message || "فشل إرسال البريد التجريبي");
   };
 
+  const [testingWa, setTestingWa] = useState(false);
+  const sendWaTest = async () => {
+    setTestingWa(true);
+    // نحفظ أولاً حتى تُستخدم القيم المكتوبة في الحقول
+    await adminUpdateSettings(pin, {
+      whatsappNotificationsEnabled: form.whatsappNotificationsEnabled ?? "true",
+      whatsappProvider: form.whatsappProvider ?? "callmebot",
+      whatsappToPhone: form.whatsappToPhone ?? "",
+      whatsappApiKey: form.whatsappApiKey ?? "",
+      whatsappUrlTemplate: form.whatsappUrlTemplate ?? "",
+    });
+    const r = await adminSendTestWhatsapp(pin);
+    setTestingWa(false);
+    if (r.ok) toast.success("تم إرسال رسالة واتساب التجريبية — تحقق من واتساب رقم الشركة");
+    else toast.error(r.message || "فشل إرسال رسالة واتساب التجريبية");
+  };
+
   const fields: { key: keyof SiteSettings; label: string; type?: string }[] = [
     { key: "brandName", label: "اسم البراند (إنجليزي)" },
     { key: "brandNameAr", label: "اسم البراند (عربي)" },
@@ -4436,6 +4455,160 @@ function SettingsManager({ pin }: { pin: string }) {
           كل شيء يُحفظ هنا في الموقع ولا يحتاج أي إعداد خارجي. الخطوات التفصيلية في
           ملف README بقسم إشعارات البريد.
         </p>
+      </div>
+
+      {/* ===== WhatsApp Notifications ===== */}
+      <div className="glass-card rounded-2xl p-4 space-y-3">
+        <div className="flex items-center gap-2 pb-2 border-b border-white/8">
+          <MessageCircle size={14} className="text-[#ff4d6d]" />
+          <h4 className="text-sm font-bold text-white">إشعارات واتساب</h4>
+        </div>
+
+        {/* enable/disable toggle */}
+        <label className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] p-3">
+          <div>
+            <span className="text-sm font-semibold text-white">
+              رسالة واتساب عند حجز جديد
+            </span>
+            <p className="text-[10px] text-white/45">
+              تصلك تفاصيل كل حجز جديد على واتساب رقم الشركة
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setForm({
+                ...form,
+                whatsappNotificationsEnabled:
+                  form.whatsappNotificationsEnabled === "false" ? "true" : "false",
+              })
+            }
+            className={cn(
+              "relative h-6 w-11 shrink-0 rounded-full transition",
+              form.whatsappNotificationsEnabled !== "false"
+                ? "bg-[#DC143C]"
+                : "bg-white/15"
+            )}
+          >
+            <span
+              className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all"
+              style={{
+                insetInlineStart:
+                  form.whatsappNotificationsEnabled !== "false"
+                    ? "calc(100% - 22px)"
+                    : "2px",
+              }}
+            />
+          </button>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-white/55">
+            رقم الواتساب المستقبل (رقم الشركة)
+          </span>
+          <input
+            type="tel"
+            dir="ltr"
+            placeholder="01505777755"
+            value={form.whatsappToPhone ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, whatsappToPhone: e.target.value })
+            }
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-white/55">
+            مزود الإرسال
+          </span>
+          <select
+            value={form.whatsappProvider ?? "callmebot"}
+            onChange={(e) =>
+              setForm({ ...form, whatsappProvider: e.target.value })
+            }
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-[#DC143C]/50 focus:outline-none"
+          >
+            <option value="callmebot" className="bg-background">
+              CallMeBot (مجاني)
+            </option>
+            <option value="textmebot" className="bg-background">
+              TextMeBot (مدفوع رمزياً)
+            </option>
+            <option value="custom" className="bg-background">
+              رابط API مخصص
+            </option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-white/55">
+            مفتاح API
+          </span>
+          <input
+            type="password"
+            dir="ltr"
+            autoComplete="off"
+            placeholder="123456"
+            value={form.whatsappApiKey ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, whatsappApiKey: e.target.value })
+            }
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+          />
+        </label>
+
+        {form.whatsappProvider === "custom" && (
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-semibold text-white/55">
+              قالب الرابط (يستبدل {"{phone}"} و {"{text}"} و {"{apikey}"})
+            </span>
+            <input
+              type="url"
+              dir="ltr"
+              placeholder="https://example.com/send?to={phone}&text={text}&key={apikey}"
+              value={form.whatsappUrlTemplate ?? ""}
+              onChange={(e) =>
+                setForm({ ...form, whatsappUrlTemplate: e.target.value })
+              }
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+            />
+          </label>
+        )}
+
+        <button
+          onClick={sendWaTest}
+          disabled={testingWa}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#25D366]/40 bg-[#25D366]/10 py-2.5 text-xs font-bold text-white hover:bg-[#25D366]/20 disabled:opacity-50 transition active:scale-[0.98]"
+        >
+          {testingWa ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <MessageCircle size={14} />
+          )}
+          إرسال رسالة تجريبية
+        </button>
+
+        <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3 space-y-1.5">
+          <p className="text-[10px] font-bold text-white/60">
+            خطوات الحصول على مفتاح CallMeBot المجاني (مرة واحدة):
+          </p>
+          <p className="text-[10px] text-white/45 leading-relaxed">
+            ١. من واتساب رقم الشركة أرسل رسالة نصها{" "}
+            <span dir="ltr" className="text-white/70">
+              I allow callmebot to send me messages
+            </span>{" "}
+            إلى رقم البوت الظاهر في موقع callmebot.com (قسم Free WhatsApp API)
+          </p>
+          <p className="text-[10px] text-white/45 leading-relaxed">
+            ٢. سيصلك المفتاح فوراً في رسالة رد — انسخه والصقه هنا واضغط (إرسال
+            رسالة تجريبية)
+          </p>
+          <p className="text-[10px] text-white/40 leading-relaxed">
+            لو لم يصلك المفتاح خلال دقيقتين فبوت التسجيل ممتلئ مؤقتاً — أعد
+            المحاولة لاحقاً أو استخدم TextMeBot.
+          </p>
+        </div>
       </div>
 
       <div className="gold-divider my-1" />

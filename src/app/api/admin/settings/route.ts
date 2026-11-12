@@ -17,9 +17,13 @@ export async function GET(req: NextRequest) {
   if (!isAuthed) {
     delete safe.adminPin;
     delete safe.smtpPass;
+    delete safe.whatsappApiKey;
   }
   return NextResponse.json({ settings: safe });
 }
+
+// مفاتيح سرية: القيمة الفارغة لا تمسح المخزّن (تحمي من المسح غير المقصود بعد إعادة تحميل الصفحة)
+const SECRET_KEYS = new Set(["adminPin", "smtpPass", "whatsappApiKey"]);
 
 // PUT update settings (admin)
 export async function PUT(req: NextRequest) {
@@ -29,6 +33,7 @@ export async function PUT(req: NextRequest) {
   const body = (await req.json()) as Record<string, string>;
   for (const [key, value] of Object.entries(body)) {
     if (typeof value !== "string") continue;
+    if (SECRET_KEYS.has(key) && value.trim() === "") continue;
     await db.setting.upsert({
       where: { key },
       update: { value },

@@ -4,7 +4,10 @@ import { useApp } from "./store";
 import { useEffect } from "react";
 import type { SiteSettings } from "./types";
 
-const FALLBACK: SiteSettings = {
+// نسخة احتياطية للعرض قبل تحميل الإعدادات من الخادم.
+// الأسرار (adminPin / smtpUser / smtpPass / whatsappApiKey) غير مضمّنة عمداً
+// حتى لا تُمسح قيمها المخزّنة لو حُفِظت الإعدادات قبل اكتمال التحميل.
+const FALLBACK = {
   brandName: "Prestige Garage",
   brandNameAr: "بريستيج جاراج",
   tagline: "Premium Car Care",
@@ -24,18 +27,18 @@ const FALLBACK: SiteSettings = {
   snapchat: "https://snapchat.com",
   email: "prestigegarage.eg@gmail.com",
   branchSelectionEnabled: "true",
-  adminPin: "1234",
   currency: "EGP",
   currencyAr: "ج.م",
   leadTimeHours: "2",
   slotDurationMin: "60",
   emailNotificationsEnabled: "true",
   bookingNotificationEmail: "Prestigegarage.eg@gmail.com",
-  smtpUser: "",
-  smtpPass: "",
   smtpHost: "smtp.gmail.com",
   smtpPort: "465",
   smtpSecure: "true",
+  whatsappNotificationsEnabled: "true",
+  whatsappProvider: "callmebot",
+  whatsappToPhone: "01505777755",
   aboutAr: "وجهة مصر الرائدة للعناية الفاخرة بالسيارات. نجمع بين التكنولوجيا الألمانية والحرفية المتخصصة لتحقيق نتائج لا مثيل لها لسيارتك.",
   aboutEn: "Egypt's premier destination for luxury car care. We combine German technology with expert craftsmanship to deliver unmatched results for your vehicle.",
 };
@@ -46,5 +49,6 @@ export function useSettings(): SiteSettings {
   useEffect(() => {
     if (!settings) loadSettings();
   }, [settings, loadSettings]);
-  return settings ?? FALLBACK;
+  // تحويل مقصود عبر unknown: النسخة الاحتياطية جزئية عمداً (بلا أسرار)
+  return settings ?? (FALLBACK as unknown as SiteSettings);
 }

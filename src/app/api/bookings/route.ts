@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { sendBookingNotificationEmail, resolveSmtpCreds } from "@/lib/mailer";
+import {
+  sendBookingWhatsAppNotification,
+  resolveWhatsAppConfig,
+} from "@/lib/whatsapp";
 
 function genRef(): string {
   const part = () => Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -197,6 +201,37 @@ export async function POST(req: NextRequest) {
       }
     } catch (emailErr) {
       console.error("[bookings] email notification crashed:", emailErr);
+    }
+
+    // ===== إشعار واتساب برقم الشركة للحجوزات الجديدة =====
+    // الإرسال لا يفشل الحجز أبداً — أي خطأ يُسجّل فقط في اللوجات
+    try {
+      const waEnabled = settings.whatsappNotificationsEnabled !== "false";
+      if (waEnabled) {
+        const waConfig = resolveWhatsAppConfig(settings);
+        const waResult = await sendBookingWhatsAppNotification(waConfig, {
+          refCode: booking.refCode,
+          customerName: booking.customerName,
+          phone: booking.phone,
+          carType: booking.carType,
+          carBrand: booking.carBrand,
+          carModel: booking.carModel,
+          variantName: booking.variantName,
+          serviceNameAr: service.nameAr || service.name,
+          branchNameAr,
+          date: booking.date,
+          time: booking.time,
+          notes: booking.notes,
+          totalPrice: booking.totalPrice,
+          currencyAr: settings.currencyAr || "ج.م",
+          brandNameAr: settings.brandNameAr || "بريستيج جاراج",
+        });
+        if (!waResult.ok) {
+          console.error("[bookings] whatsapp notification not sent:", waResult.error);
+        }
+      }
+    } catch (waErr) {
+      console.error("[bookings] whatsapp notification crashed:", waErr);
     }
 
     return NextResponse.json({ booking });
