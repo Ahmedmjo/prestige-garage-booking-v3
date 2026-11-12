@@ -37,11 +37,16 @@ const DEFAULTS: SiteSettings = {
   smtpPort: "465",
   smtpSecure: "true",
   // إشعارات واتساب: تُرسل لرقم الشركة عند كل حجز جديد
+  // المزودات: ultramsg (موصى به) | meta | callmebot | textmebot | custom
   whatsappNotificationsEnabled: "true",
-  whatsappProvider: "callmebot", // callmebot | textmebot | custom
+  whatsappProvider: "ultramsg",
   whatsappToPhone: "01505777755",
   whatsappApiKey: "",
   whatsappUrlTemplate: "",
+  whatsappInstanceId: "",
+  whatsappToken: "",
+  whatsappMetaToken: "",
+  whatsappMetaPhoneId: "",
   aboutAr: "وجهة مصر الرائدة للعناية الفاخرة بالسيارات. نجمع بين التكنولوجيا الألمانية والحرفية المتخصصة لتحقيق نتائج لا مثيل لها لسيارتك.",
   aboutEn: "Egypt's premier destination for luxury car care. We combine German technology with expert craftsmanship to deliver unmatched results for your vehicle.",
 };

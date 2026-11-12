@@ -4,6 +4,7 @@ import {
   sendTestWhatsApp,
   resolveWhatsAppConfig,
   isWhatsAppConfigured,
+  missingWhatsAppFields,
 } from "@/lib/whatsapp";
 
 /**
@@ -30,12 +31,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isWhatsAppConfigured(config)) {
+      const missing = missingWhatsAppFields(config);
       return NextResponse.json(
         {
           ok: false,
           error: "whatsapp_not_configured",
-          message:
-            "أدخل مفتاح API في الحقل المخصص ثم احفظ — خطوات الحصول على المفتاح المجاني موجودة بالأسفل في نفس البطاقة",
+          message: `أكمل الحقول التالية في بطاقة واتساب بالأعلى ثم احفظ: ${missing.join("، ")}`,
         },
         { status: 400 }
       );
@@ -49,7 +50,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
-          message: `فشل الإرسال: ${result.error || "خطأ غير معروف"} — تأكد من مفتاح API ومن إرسال رسالة التفعيل للبوت من نفس الرقم`,
+          message: `فشل الإرسال: ${result.error || "خطأ غير معروف"} — راجع بيانات المزوّد في الإعدادات${
+            config.provider === "ultramsg"
+              ? " وتأكد من مسح كود QR من لوحة UltraMsg"
+              : ""
+          }`,
         },
         { status: 500 }
       );

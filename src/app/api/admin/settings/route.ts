@@ -18,12 +18,20 @@ export async function GET(req: NextRequest) {
     delete safe.adminPin;
     delete safe.smtpPass;
     delete safe.whatsappApiKey;
+    delete safe.whatsappToken;
+    delete safe.whatsappMetaToken;
   }
   return NextResponse.json({ settings: safe });
 }
 
 // مفاتيح سرية: القيمة الفارغة لا تمسح المخزّن (تحمي من المسح غير المقصود بعد إعادة تحميل الصفحة)
-const SECRET_KEYS = new Set(["adminPin", "smtpPass", "whatsappApiKey"]);
+const SECRET_KEYS = new Set([
+  "adminPin",
+  "smtpPass",
+  "whatsappApiKey",
+  "whatsappToken",
+  "whatsappMetaToken",
+]);
 
 // PUT update settings (admin)
 export async function PUT(req: NextRequest) {

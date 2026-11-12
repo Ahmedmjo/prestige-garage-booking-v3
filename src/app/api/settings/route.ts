@@ -6,8 +6,10 @@ export async function GET() {
   const settings = await getSettings();
   const safe = { ...settings } as Partial<typeof settings>;
   delete safe.adminPin;
-  // كلمات المرور لا تُعاد أبداً في القراءة العامة
+  // كلمات المرور والتوكنات لا تُعاد أبداً في القراءة العامة
   delete safe.smtpPass;
   delete safe.whatsappApiKey;
+  delete safe.whatsappToken;
+  delete safe.whatsappMetaToken;
   return NextResponse.json({ settings: safe });
 }

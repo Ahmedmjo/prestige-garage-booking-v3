@@ -5,8 +5,8 @@ import { useEffect } from "react";
 import type { SiteSettings } from "./types";
 
 // نسخة احتياطية للعرض قبل تحميل الإعدادات من الخادم.
-// الأسرار (adminPin / smtpUser / smtpPass / whatsappApiKey) غير مضمّنة عمداً
-// حتى لا تُمسح قيمها المخزّنة لو حُفِظت الإعدادات قبل اكتمال التحميل.
+// الأسرار (adminPin / smtpUser / smtpPass / whatsappApiKey / whatsappToken / whatsappMetaToken)
+// غير مضمّنة عمداً حتى لا تُمسح قيمها المخزّنة لو حُفِظت الإعدادات قبل اكتمال التحميل.
 const FALLBACK = {
   brandName: "Prestige Garage",
   brandNameAr: "بريستيج جاراج",
@@ -37,7 +37,7 @@ const FALLBACK = {
   smtpPort: "465",
   smtpSecure: "true",
   whatsappNotificationsEnabled: "true",
-  whatsappProvider: "callmebot",
+  whatsappProvider: "ultramsg",
   whatsappToPhone: "01505777755",
   aboutAr: "وجهة مصر الرائدة للعناية الفاخرة بالسيارات. نجمع بين التكنولوجيا الألمانية والحرفية المتخصصة لتحقيق نتائج لا مثيل لها لسيارتك.",
   aboutEn: "Egypt's premier destination for luxury car care. We combine German technology with expert craftsmanship to deliver unmatched results for your vehicle.",

@@ -160,6 +160,10 @@ export interface SiteSettings {
   whatsappToPhone: string;
   whatsappApiKey: string;
   whatsappUrlTemplate: string;
+  whatsappInstanceId: string;
+  whatsappToken: string;
+  whatsappMetaToken: string;
+  whatsappMetaPhoneId: string;
   [key: string]: string;
 }
 

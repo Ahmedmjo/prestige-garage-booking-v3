@@ -4097,10 +4097,14 @@ function SettingsManager({ pin }: { pin: string }) {
     // نحفظ أولاً حتى تُستخدم القيم المكتوبة في الحقول
     await adminUpdateSettings(pin, {
       whatsappNotificationsEnabled: form.whatsappNotificationsEnabled ?? "true",
-      whatsappProvider: form.whatsappProvider ?? "callmebot",
+      whatsappProvider: form.whatsappProvider ?? "ultramsg",
       whatsappToPhone: form.whatsappToPhone ?? "",
       whatsappApiKey: form.whatsappApiKey ?? "",
       whatsappUrlTemplate: form.whatsappUrlTemplate ?? "",
+      whatsappInstanceId: form.whatsappInstanceId ?? "",
+      whatsappToken: form.whatsappToken ?? "",
+      whatsappMetaToken: form.whatsappMetaToken ?? "",
+      whatsappMetaPhoneId: form.whatsappMetaPhoneId ?? "",
     });
     const r = await adminSendTestWhatsapp(pin);
     setTestingWa(false);
@@ -4523,14 +4527,20 @@ function SettingsManager({ pin }: { pin: string }) {
             مزود الإرسال
           </span>
           <select
-            value={form.whatsappProvider ?? "callmebot"}
+            value={form.whatsappProvider ?? "ultramsg"}
             onChange={(e) =>
               setForm({ ...form, whatsappProvider: e.target.value })
             }
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-[#DC143C]/50 focus:outline-none"
           >
+            <option value="ultramsg" className="bg-background">
+              UltraMsg (موصى به — أسهل إعداد)
+            </option>
+            <option value="meta" className="bg-background">
+              واتساب Cloud API الرسمي (Meta)
+            </option>
             <option value="callmebot" className="bg-background">
-              CallMeBot (مجاني)
+              CallMeBot (مجاني — كثيراً ما يمتلئ)
             </option>
             <option value="textmebot" className="bg-background">
               TextMeBot (مدفوع رمزياً)
@@ -4541,22 +4551,100 @@ function SettingsManager({ pin }: { pin: string }) {
           </select>
         </label>
 
-        <label className="block">
-          <span className="mb-1 block text-[11px] font-semibold text-white/55">
-            مفتاح API
-          </span>
-          <input
-            type="password"
-            dir="ltr"
-            autoComplete="off"
-            placeholder="123456"
-            value={form.whatsappApiKey ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, whatsappApiKey: e.target.value })
-            }
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
-          />
-        </label>
+        {["callmebot", "textmebot", "custom"].includes(
+          form.whatsappProvider ?? ""
+        ) && (
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-semibold text-white/55">
+              مفتاح API
+            </span>
+            <input
+              type="password"
+              dir="ltr"
+              autoComplete="off"
+              placeholder="123456"
+              value={form.whatsappApiKey ?? ""}
+              onChange={(e) =>
+                setForm({ ...form, whatsappApiKey: e.target.value })
+              }
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+            />
+          </label>
+        )}
+
+        {(form.whatsappProvider ?? "ultramsg") === "ultramsg" && (
+          <>
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-semibold text-white/55">
+                معرّف النسخة (Instance ID)
+              </span>
+              <input
+                type="text"
+                dir="ltr"
+                autoComplete="off"
+                placeholder="instance12345"
+                value={form.whatsappInstanceId ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, whatsappInstanceId: e.target.value })
+                }
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-semibold text-white/55">
+                توكن UltraMsg (Token)
+              </span>
+              <input
+                type="password"
+                dir="ltr"
+                autoComplete="off"
+                placeholder="xc1vzqv..."
+                value={form.whatsappToken ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, whatsappToken: e.target.value })
+                }
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+              />
+            </label>
+          </>
+        )}
+
+        {form.whatsappProvider === "meta" && (
+          <>
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-semibold text-white/55">
+                معرّف رقم الهاتف (Phone Number ID)
+              </span>
+              <input
+                type="text"
+                dir="ltr"
+                autoComplete="off"
+                placeholder="123456789012345"
+                value={form.whatsappMetaPhoneId ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, whatsappMetaPhoneId: e.target.value })
+                }
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-semibold text-white/55">
+                توكن Meta الدائم (Permanent Token)
+              </span>
+              <input
+                type="password"
+                dir="ltr"
+                autoComplete="off"
+                placeholder="EAAG..."
+                value={form.whatsappMetaToken ?? ""}
+                onChange={(e) =>
+                  setForm({ ...form, whatsappMetaToken: e.target.value })
+                }
+                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
+              />
+            </label>
+          </>
+        )}
 
         {form.whatsappProvider === "custom" && (
           <label className="block">
@@ -4589,26 +4677,80 @@ function SettingsManager({ pin }: { pin: string }) {
           إرسال رسالة تجريبية
         </button>
 
-        <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3 space-y-1.5">
-          <p className="text-[10px] font-bold text-white/60">
-            خطوات الحصول على مفتاح CallMeBot المجاني (مرة واحدة):
-          </p>
-          <p className="text-[10px] text-white/45 leading-relaxed">
-            ١. من واتساب رقم الشركة أرسل رسالة نصها{" "}
-            <span dir="ltr" className="text-white/70">
-              I allow callmebot to send me messages
-            </span>{" "}
-            إلى رقم البوت الظاهر في موقع callmebot.com (قسم Free WhatsApp API)
-          </p>
-          <p className="text-[10px] text-white/45 leading-relaxed">
-            ٢. سيصلك المفتاح فوراً في رسالة رد — انسخه والصقه هنا واضغط (إرسال
-            رسالة تجريبية)
-          </p>
-          <p className="text-[10px] text-white/40 leading-relaxed">
-            لو لم يصلك المفتاح خلال دقيقتين فبوت التسجيل ممتلئ مؤقتاً — أعد
-            المحاولة لاحقاً أو استخدم TextMeBot.
-          </p>
-        </div>
+        {(form.whatsappProvider ?? "ultramsg") === "ultramsg" && (
+          <div className="rounded-xl border border-[#25D366]/30 bg-[#25D366]/[0.06] p-3 space-y-1.5">
+            <p className="text-[10px] font-bold text-white/60">
+              خطوات UltraMsg (مرة واحدة — حوالي دقيقتين):
+            </p>
+            <p className="text-[10px] text-white/45 leading-relaxed">
+              ١. سجّل حساباً مجاناً في{" "}
+              <a
+                href="https://ultramsg.com/free/"
+                target="_blank"
+                rel="noreferrer"
+                dir="ltr"
+                className="text-[#25D366] underline"
+              >
+                ultramsg.com/free
+              </a>{" "}
+              (بريد إلكتروني + كلمة مرور فقط)
+            </p>
+            <p className="text-[10px] text-white/45 leading-relaxed">
+              ٢. من لوحة UltraMsg اضغط (Scan QR) وامسح الكود بتطبيق واتساب أي رقم
+              عندك — الرقم ده هيكون المُرسِل للإشعارات
+            </p>
+            <p className="text-[10px] text-white/45 leading-relaxed">
+              ٣. انسخ (Instance ID) و (Token) الظاهرين في لوحة UltraMsg والصقهما
+              في الحقلين بالأعلى ثم اضغط (إرسال رسالة تجريبية)
+            </p>
+            <p className="text-[10px] text-white/40 leading-relaxed">
+              نصيحة: الرسائل هتوصل من الرقم المربوط بـ UltraMsg إلى رقم الشركة
+              المكتوب في الحقل الأول. الحساب المجاني للتجربة كافي للبداية.
+            </p>
+          </div>
+        )}
+
+        {form.whatsappProvider === "meta" && (
+          <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3 space-y-1.5">
+            <p className="text-[10px] font-bold text-white/60">
+              واتساب Cloud API الرسمي (Meta):
+            </p>
+            <p className="text-[10px] text-white/45 leading-relaxed">
+              يحتاج حساب Meta for Developers + رقم واتساب Business — من
+              developers.facebook.com أنشئ تطبيقاً من نوع WhatsApp، ثم انسخ (Phone
+              Number ID) وأنشئ (Permanent Token) من إعدادات النظام. الخطوات
+              الكاملة في ملف README.
+            </p>
+            <p className="text-[10px] text-white/40 leading-relaxed">
+              ملاحظة: الرسائل التي تبدأها أنت (خارج نافذة الرد ٢٤ ساعة) تتطلب
+              قالباً معتمداً من Meta — مناسب لو عايز الحل الرسمي بدون وسطاء.
+            </p>
+          </div>
+        )}
+
+        {form.whatsappProvider === "callmebot" && (
+          <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3 space-y-1.5">
+            <p className="text-[10px] font-bold text-white/60">
+              خطوات الحصول على مفتاح CallMeBot المجاني (مرة واحدة):
+            </p>
+            <p className="text-[10px] text-white/45 leading-relaxed">
+              ١. من واتساب رقم الشركة أرسل رسالة نصها{" "}
+              <span dir="ltr" className="text-white/70">
+                I allow callmebot to send me messages
+              </span>{" "}
+              إلى رقم البوت الظاهر في موقع callmebot.com (قسم Free WhatsApp API)
+            </p>
+            <p className="text-[10px] text-white/45 leading-relaxed">
+              ٢. سيصلك المفتاح فوراً في رسالة رد — انسخه والصقه هنا واضغط (إرسال
+              رسالة تجريبية)
+            </p>
+            <p className="text-[10px] text-[#ff8fa3] leading-relaxed">
+              تنبيه: بوتات CallMeBot كثيراً ما تمتلئ وتبقى معطلة لأيام — لو لم
+              يصلك المفتاح خلال دقيقتين استخدم UltraMsg بدلاً منه (خيار الموصى
+              به في القائمة).
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="gold-divider my-1" />
