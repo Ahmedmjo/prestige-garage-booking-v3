@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import type { SiteSettings } from "./types";
 
 // نسخة احتياطية للعرض قبل تحميل الإعدادات من الخادم.
-// الأسرار (adminPin / smtpUser / smtpPass / whatsappApiKey / whatsappToken / whatsappMetaToken)
+// الأسرار (adminPin / smtpUser / smtpPass / whatsappApiKey / whatsappToken)
 // غير مضمّنة عمداً حتى لا تُمسح قيمها المخزّنة لو حُفِظت الإعدادات قبل اكتمال التحميل.
 const FALLBACK = {
   brandName: "Prestige Garage",

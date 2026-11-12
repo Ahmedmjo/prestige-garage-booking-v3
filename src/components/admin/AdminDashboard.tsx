@@ -4104,8 +4104,6 @@ function SettingsManager({ pin }: { pin: string }) {
       whatsappInstanceId: form.whatsappInstanceId ?? "",
       whatsappToken: form.whatsappToken ?? "",
       whatsappApiInstanceUrl: form.whatsappApiInstanceUrl ?? "",
-      whatsappMetaToken: form.whatsappMetaToken ?? "",
-      whatsappMetaPhoneId: form.whatsappMetaPhoneId ?? "",
     });
     const r = await adminSendTestWhatsapp(pin);
     setTestingWa(false);
@@ -4537,17 +4535,8 @@ function SettingsManager({ pin }: { pin: string }) {
             <option value="greenapi" className="bg-background">
               GREEN-API (موصى به — خطة مجانية دائمة)
             </option>
-            <option value="ultramsg" className="bg-background">
-              UltraMsg (تجربة ٣ أيام ثم ٣٩$ شهرياً)
-            </option>
-            <option value="meta" className="bg-background">
-              واتساب Cloud API الرسمي (Meta)
-            </option>
             <option value="callmebot" className="bg-background">
               CallMeBot (مجاني — كثيراً ما يمتلئ)
-            </option>
-            <option value="textmebot" className="bg-background">
-              TextMeBot (مدفوع رمزياً)
             </option>
             <option value="custom" className="bg-background">
               رابط API مخصص
@@ -4555,9 +4544,7 @@ function SettingsManager({ pin }: { pin: string }) {
           </select>
         </label>
 
-        {["callmebot", "textmebot", "custom"].includes(
-          form.whatsappProvider ?? ""
-        ) && (
+        {["callmebot", "custom"].includes(form.whatsappProvider ?? "") && (
           <label className="block">
             <span className="mb-1 block text-[11px] font-semibold text-white/55">
               مفتاح API
@@ -4606,80 +4593,6 @@ function SettingsManager({ pin }: { pin: string }) {
                 value={form.whatsappToken ?? ""}
                 onChange={(e) =>
                   setForm({ ...form, whatsappToken: e.target.value })
-                }
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
-              />
-            </label>
-          </>
-        )}
-
-        {form.whatsappProvider === "ultramsg" && (
-          <>
-            <label className="block">
-              <span className="mb-1 block text-[11px] font-semibold text-white/55">
-                معرّف النسخة (Instance ID)
-              </span>
-              <input
-                type="text"
-                dir="ltr"
-                autoComplete="off"
-                placeholder="instance12345"
-                value={form.whatsappInstanceId ?? ""}
-                onChange={(e) =>
-                  setForm({ ...form, whatsappInstanceId: e.target.value })
-                }
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-[11px] font-semibold text-white/55">
-                توكن UltraMsg (Token)
-              </span>
-              <input
-                type="password"
-                dir="ltr"
-                autoComplete="off"
-                placeholder="xc1vzqv..."
-                value={form.whatsappToken ?? ""}
-                onChange={(e) =>
-                  setForm({ ...form, whatsappToken: e.target.value })
-                }
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
-              />
-            </label>
-          </>
-        )}
-
-        {form.whatsappProvider === "meta" && (
-          <>
-            <label className="block">
-              <span className="mb-1 block text-[11px] font-semibold text-white/55">
-                معرّف رقم الهاتف (Phone Number ID)
-              </span>
-              <input
-                type="text"
-                dir="ltr"
-                autoComplete="off"
-                placeholder="123456789012345"
-                value={form.whatsappMetaPhoneId ?? ""}
-                onChange={(e) =>
-                  setForm({ ...form, whatsappMetaPhoneId: e.target.value })
-                }
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-[11px] font-semibold text-white/55">
-                توكن Meta الدائم (Permanent Token)
-              </span>
-              <input
-                type="password"
-                dir="ltr"
-                autoComplete="off"
-                placeholder="EAAG..."
-                value={form.whatsappMetaToken ?? ""}
-                onChange={(e) =>
-                  setForm({ ...form, whatsappMetaToken: e.target.value })
                 }
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white text-left placeholder:text-white/25 focus:border-[#DC143C]/50 focus:outline-none"
               />
@@ -4751,57 +4664,6 @@ function SettingsManager({ pin }: { pin: string }) {
           </div>
         )}
 
-        {form.whatsappProvider === "ultramsg" && (
-          <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3 space-y-1.5">
-            <p className="text-[10px] font-bold text-white/60">
-              خطوات UltraMsg (مرة واحدة — حوالي دقيقتين):
-            </p>
-            <p className="text-[10px] text-white/45 leading-relaxed">
-              ١. سجّل حساباً مجاناً في{" "}
-              <a
-                href="https://ultramsg.com/free/"
-                target="_blank"
-                rel="noreferrer"
-                dir="ltr"
-                className="text-[#25D366] underline"
-              >
-                ultramsg.com/free
-              </a>{" "}
-              (بريد إلكتروني + كلمة مرور فقط)
-            </p>
-            <p className="text-[10px] text-white/45 leading-relaxed">
-              ٢. من لوحة UltraMsg اضغط (Scan QR) وامسح الكود بتطبيق واتساب أي رقم
-              عندك — الرقم ده هيكون المُرسِل للإشعارات
-            </p>
-            <p className="text-[10px] text-white/45 leading-relaxed">
-              ٣. انسخ (Instance ID) و (Token) الظاهرين في لوحة UltraMsg والصقهما
-              في الحقلين بالأعلى ثم اضغط (إرسال رسالة تجريبية)
-            </p>
-            <p className="text-[10px] text-[#ff8fa3] leading-relaxed">
-              تنبيه: التجربة المجانية ٣ أيام فقط، وبعدها الاشتراك ٣٩$ شهرياً —
-              استخدمها لو جربت GREEN-API ولم تناسبك.
-            </p>
-          </div>
-        )}
-
-        {form.whatsappProvider === "meta" && (
-          <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3 space-y-1.5">
-            <p className="text-[10px] font-bold text-white/60">
-              واتساب Cloud API الرسمي (Meta):
-            </p>
-            <p className="text-[10px] text-white/45 leading-relaxed">
-              يحتاج حساب Meta for Developers + رقم واتساب Business — من
-              developers.facebook.com أنشئ تطبيقاً من نوع WhatsApp، ثم انسخ (Phone
-              Number ID) وأنشئ (Permanent Token) من إعدادات النظام. الخطوات
-              الكاملة في ملف README.
-            </p>
-            <p className="text-[10px] text-white/40 leading-relaxed">
-              ملاحظة: الرسائل التي تبدأها أنت (خارج نافذة الرد ٢٤ ساعة) تتطلب
-              قالباً معتمداً من Meta — مناسب لو عايز الحل الرسمي بدون وسطاء.
-            </p>
-          </div>
-        )}
-
         {form.whatsappProvider === "callmebot" && (
           <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3 space-y-1.5">
             <p className="text-[10px] font-bold text-white/60">
@@ -4820,8 +4682,8 @@ function SettingsManager({ pin }: { pin: string }) {
             </p>
             <p className="text-[10px] text-[#ff8fa3] leading-relaxed">
               تنبيه: بوتات CallMeBot كثيراً ما تمتلئ وتبقى معطلة لأيام — لو لم
-              يصلك المفتاح خلال دقيقتين استخدم UltraMsg بدلاً منه (خيار الموصى
-              به في القائمة).
+              يصلك المفتاح خلال دقيقتين استخدم GREEN-API (خيار الموصى به في
+              القائمة).
             </p>
           </div>
         )}

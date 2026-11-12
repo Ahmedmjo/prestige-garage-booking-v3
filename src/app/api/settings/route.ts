@@ -10,6 +10,5 @@ export async function GET() {
   delete safe.smtpPass;
   delete safe.whatsappApiKey;
   delete safe.whatsappToken;
-  delete safe.whatsappMetaToken;
   return NextResponse.json({ settings: safe });
 }

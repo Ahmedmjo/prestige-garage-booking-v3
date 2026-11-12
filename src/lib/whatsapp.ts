@@ -3,10 +3,7 @@
  * ------------------------------------------------
  * مزودات مدعومة (تُضبط من لوحة الأدمن ← الإعدادات ← إشعارات واتساب):
  *   greenapi  (موصى به — خطة مجانية دائمة)      -> api.green-api.com (POST JSON)
- *   ultramsg  (تجربة ٣ أيام ثم ٣٩$ شهرياً)        -> api.ultramsg.com (POST JSON)
- *   meta      (واتساب Cloud API الرسمي)        -> graph.facebook.com (POST JSON)
  *   callmebot (مجاني — كثيراً ما يمتلئ بوتاته) -> api.callmebot.com/whatsapp.php
- *   textmebot (بديل مدفوع رمزياً)              -> api.textmebot.com/send.php
  *   custom    (رابط API مخصص)                  -> قالب URL يحتوي {phone} و {text} و {apikey}
  *
  * الإرسال لا يفشل الحجز أبداً: أي خطأ يُسجَّل فقط في اللوجات.
@@ -21,15 +18,13 @@ export interface SendResult {
 /* ================= الإعدادات ================= */
 
 export interface WhatsAppConfig {
-  provider: string; // "greenapi" | "ultramsg" | "meta" | "callmebot" | "textmebot" | "custom"
+  provider: string; // "greenapi" | "callmebot" | "custom"
   toPhone: string; // رقم الشركة المستقبل (مصري: 01xxxxxxxxx)
-  apiKey: string; // callmebot / textmebot / custom
+  apiKey: string; // callmebot / custom
   urlTemplate: string; // للمزود المخصص فقط
-  instanceId: string; // greenapi: معرّف النسخة (idInstance) | ultramsg: معرّف النسخة (مثال: instance12345)
-  token: string; // greenapi: التوكن (apiTokenInstance) | ultramsg: توكن النسخة
+  instanceId: string; // greenapi: معرّف النسخة (idInstance)
+  token: string; // greenapi: التوكن (apiTokenInstance)
   apiInstanceUrl: string; // greenapi: رابط الـ API (apiUrl) — الافتراضي https://api.green-api.com
-  metaToken: string; // meta: توكن دائم (Permanent Token)
-  metaPhoneId: string; // meta: معرّف رقم الهاتف (Phone Number ID)
 }
 
 export function resolveWhatsAppConfig(settings: {
@@ -40,8 +35,6 @@ export function resolveWhatsAppConfig(settings: {
   whatsappInstanceId?: string;
   whatsappToken?: string;
   whatsappApiInstanceUrl?: string;
-  whatsappMetaToken?: string;
-  whatsappMetaPhoneId?: string;
 }): WhatsAppConfig {
   return {
     provider: (settings.whatsappProvider || "greenapi").trim().toLowerCase(),
@@ -51,8 +44,6 @@ export function resolveWhatsAppConfig(settings: {
     instanceId: (settings.whatsappInstanceId || "").trim(),
     token: (settings.whatsappToken || "").trim(),
     apiInstanceUrl: (settings.whatsappApiInstanceUrl || "").trim(),
-    metaToken: (settings.whatsappMetaToken || "").trim(),
-    metaPhoneId: (settings.whatsappMetaPhoneId || "").trim(),
   };
 }
 
@@ -63,12 +54,6 @@ export function missingWhatsAppFields(c: WhatsAppConfig): string[] {
   if (c.provider === "greenapi") {
     if (!c.instanceId) missing.push("معرّف النسخة (idInstance)");
     if (!c.token) missing.push("التوكن (apiTokenInstance)");
-  } else if (c.provider === "ultramsg") {
-    if (!c.instanceId) missing.push("معرّف النسخة (Instance ID)");
-    if (!c.token) missing.push("توكن UltraMsg");
-  } else if (c.provider === "meta") {
-    if (!c.metaToken) missing.push("توكن Meta الدائم");
-    if (!c.metaPhoneId) missing.push("معرّف رقم الهاتف (Phone Number ID)");
   } else if (c.provider === "custom") {
     if (!c.urlTemplate) missing.push("قالب الرابط");
     if (!c.apiKey) missing.push("مفتاح API");
@@ -142,15 +127,12 @@ export function renderBookingWhatsAppMessage(d: BookingWhatsAppData): string {
 
 /* ================= الإرسال ================= */
 
-/** مزودات الروابط (callmebot / textmebot / custom) — GET بسيط */
+/** مزودات الروابط (callmebot / custom) — GET بسيط */
 function buildRequestUrl(c: WhatsAppConfig, text: string): string {
   const phone = encodeURIComponent(toInternationalPhone(c.toPhone));
   const msg = encodeURIComponent(text);
   const key = encodeURIComponent(c.apiKey);
 
-  if (c.provider === "textmebot") {
-    return `https://api.textmebot.com/send.php?recipient=${phone}&apikey=${key}&text=${msg}`;
-  }
   if (c.provider === "custom" && c.urlTemplate) {
     return c.urlTemplate
       .replaceAll("{phone}", phone)
@@ -173,61 +155,6 @@ async function sendViaGet(url: string): Promise<SendResult> {
   // بعض المزودات ترجع 200 مع نص خطأ داخل الجسم
   if (/(invalid|error|unauthor)/i.test(body)) {
     return { ok: false, error: body.slice(0, 160) || "provider_error" };
-  }
-  return { ok: true };
-}
-
-/** UltraMsg — POST JSON إلى api.ultramsg.com */
-async function sendViaUltraMsg(c: WhatsAppConfig, text: string): Promise<SendResult> {
-  const res = await fetch(`https://api.ultramsg.com/${c.instanceId}/messages/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    signal: AbortSignal.timeout(10000),
-    body: JSON.stringify({
-      token: c.token,
-      to: toInternationalPhone(c.toPhone),
-      body: text,
-    }),
-  });
-  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  const sent = String(data.sent ?? "");
-  if (!res.ok || data.error || sent === "false") {
-    const err =
-      typeof data.error === "string" && data.error
-        ? data.error
-        : JSON.stringify(data).slice(0, 160) || `HTTP ${res.status}`;
-    return { ok: false, error: err };
-  }
-  return { ok: true };
-}
-
-/** Meta WhatsApp Cloud API — POST JSON إلى graph.facebook.com */
-async function sendViaMeta(c: WhatsAppConfig, text: string): Promise<SendResult> {
-  const to = toInternationalPhone(c.toPhone).replace(/^\+/, ""); // Meta: أرقام فقط بلا +
-  const res = await fetch(`https://graph.facebook.com/v22.0/${c.metaPhoneId}/messages`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${c.metaToken}`,
-    },
-    signal: AbortSignal.timeout(10000),
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to,
-      type: "text",
-      text: { preview_url: false, body: text },
-    }),
-  });
-  const data = (await res.json().catch(() => ({}))) as {
-    error?: { message?: string };
-  };
-  if (!res.ok || data.error) {
-    const err =
-      data.error?.message && data.error.message !== "undefined"
-        ? data.error.message
-        : `HTTP ${res.status}`;
-    return { ok: false, error: err.slice(0, 200) };
   }
   return { ok: true };
 }
@@ -274,8 +201,6 @@ export async function sendWhatsAppText(
     }
 
     if (c.provider === "greenapi") return await sendViaGreenApi(c, text);
-    if (c.provider === "ultramsg") return await sendViaUltraMsg(c, text);
-    if (c.provider === "meta") return await sendViaMeta(c, text);
     return await sendViaGet(buildRequestUrl(c, text));
   } catch (e) {
     console.error("[whatsapp] send failed:", e);

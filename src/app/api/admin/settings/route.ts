@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
     delete safe.smtpPass;
     delete safe.whatsappApiKey;
     delete safe.whatsappToken;
-    delete safe.whatsappMetaToken;
   }
   return NextResponse.json({ settings: safe });
 }
@@ -30,7 +29,6 @@ const SECRET_KEYS = new Set([
   "smtpPass",
   "whatsappApiKey",
   "whatsappToken",
-  "whatsappMetaToken",
 ]);
 
 // PUT update settings (admin)

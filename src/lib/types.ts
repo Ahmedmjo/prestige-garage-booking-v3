@@ -163,8 +163,6 @@ export interface SiteSettings {
   whatsappInstanceId: string;
   whatsappToken: string;
   whatsappApiInstanceUrl: string;
-  whatsappMetaToken: string;
-  whatsappMetaPhoneId: string;
   [key: string]: string;
 }
 
